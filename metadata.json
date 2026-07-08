@@ -1,0 +1,6 @@
+{
+  "name": "SEO Audit AI Pro",
+  "description": "A comprehensive, production-ready AI-powered SEO analysis and audit engine equipped with on-page scrapers, structural health checks, and intelligent Gemini optimization recommendations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
