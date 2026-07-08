@@ -1,6 +1,5 @@
 import express from 'express';
 import path from 'path';
-import { createServer as createViteServer } from 'vite';
 import auditRouter from './backend/src/routes/audit';
 import auditSingularRouter from './backend/src/routes/auditSingular';
 import recommendationsRouter from './backend/src/routes/recommendations';
@@ -28,6 +27,7 @@ async function startServer() {
   // Vite Middleware Setup
   if (process.env.NODE_ENV !== 'production') {
     console.log('[Dev Server] Mounting Vite dev middleware...');
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
