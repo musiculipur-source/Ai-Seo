@@ -3,6 +3,7 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import auditRouter from './backend/src/routes/audit';
 import auditSingularRouter from './backend/src/routes/auditSingular';
+import recommendationsRouter from './backend/src/routes/recommendations';
 import { errorHandler } from './backend/src/middleware/errorHandler';
 
 async function startServer() {
@@ -19,6 +20,7 @@ async function startServer() {
 
   app.use('/api/audits', auditRouter);
   app.use('/api/audit', auditSingularRouter);
+  app.use('/api/recommendations', recommendationsRouter);
 
   // Global Error Handler
   app.use(errorHandler);

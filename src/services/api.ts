@@ -1,4 +1,14 @@
 import { SEOAuditReport, AuditHistoryItem } from '../../shared/types';
+import { AIRecommendationResponse } from '../types/recommendation.types';
+
+export async function getAIRecommendations(id: string): Promise<AIRecommendationResponse> {
+  const response = await fetch(`/api/recommendations/${id}`);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Could not retrieve AI recommendations.');
+  }
+  return response.json();
+}
 
 export async function runSEOAudit(url: string): Promise<SEOAuditReport> {
   const response = await fetch('/api/audits', {
