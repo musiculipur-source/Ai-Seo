@@ -18,6 +18,40 @@ export async function createAudit(req: Request, res: Response, next: NextFunctio
     }
 
     const cleanUrl = url.trim();
+
+    // 24-hour rate limit check for Basic Plan users
+    const userEmail = req.headers['x-user-email'] as string;
+    if (userEmail) {
+      const { getUserByEmail, saveUser } = await import('../../../database/index');
+      const userRec = await getUserByEmail(userEmail);
+      if (userRec) {
+        if (userRec.plan === 'basic') {
+          const now = Date.now();
+          if (userRec.lastAuditTimestamp) {
+            const lastAudit = new Date(userRec.lastAuditTimestamp).getTime();
+            const hoursPassed = (now - lastAudit) / (1000 * 60 * 60);
+            if (hoursPassed < 24) {
+              const remainingHours = Math.ceil(24 - hoursPassed);
+              return res.status(403).json({ 
+                error: `Basic Plan Limit: You can only run 1 SEO Audit per 24 hours. Please wait ${remainingHours} hours or upgrade your plan to unlock unlimited crawls!`,
+                limitReached: true,
+                remainingHours
+              });
+            }
+          }
+          // Mark audit run
+          userRec.lastAuditTimestamp = new Date().toISOString();
+          userRec.credits = Math.max(0, userRec.credits - 1);
+          await saveUser(userRec);
+        } else {
+          // Deduct credits for paid plans if they are limited, or keep unlimited
+          const { saveUser: saveUserDb } = await import('../../../database/index');
+          userRec.credits = Math.max(0, userRec.credits - 1);
+          await saveUserDb(userRec);
+        }
+      }
+    }
+
     Logger.info(`[AuditController] Launching full dashboard audit for URL: ${cleanUrl}`);
 
     // 1. Fetch page using Axios crawler with timeout and retries

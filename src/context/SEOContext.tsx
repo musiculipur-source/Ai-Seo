@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { SEOAuditReport, AuditHistoryItem } from '../../shared/types';
 import { getHistoryList, deleteReport, getReportDetails, runSEOAudit } from '../services/api';
+import { LanguageCode, SUPPORTED_LANGUAGES, TRANSLATIONS } from '../lib/translations';
 
 export type VisualTheme = 'dark' | 'light' | 'midnight';
 
@@ -13,6 +14,10 @@ export type AppView =
   | 'login' 
   | 'register' 
   | 'profile'
+  | 'plans'
+  | 'admin'
+  | 'keyword-generator'
+  | 'youtube-seo'
   | '404';
 
 export interface UserSession {
@@ -22,6 +27,20 @@ export interface UserSession {
   credits: number;
   company?: string;
   avatarUrl?: string;
+  plan?: 'basic' | 'standard' | 'premium';
+  isAdmin?: boolean;
+  lastAuditTimestamp?: string;
+  phone?: string;
+  claimedFreePlan?: boolean;
+  pendingUpgrade?: {
+    plan: 'basic' | 'standard' | 'premium';
+    txid?: string;
+    paymentMethod?: string;
+    cardholderName?: string;
+    cardNumber?: string;
+    paypalEmail?: string;
+    requestedAt: string;
+  } | null;
 }
 
 export interface CrawlSettings {
@@ -39,13 +58,26 @@ export interface ToastMessage {
   type: 'success' | 'error' | 'info';
 }
 
+export interface AdminSettingsType {
+  binanceEnabled: boolean;
+  cardEnabled: boolean;
+  paypalEnabled: boolean;
+  binanceAddress?: string;
+  binanceNetwork?: string;
+  paypalEmail?: string;
+  bankName?: string;
+  bankBranch?: string;
+  bankAccountHolder?: string;
+  bankAccountNumber?: string;
+}
+
 interface SEOContextType {
   currentView: AppView;
   navigate: (view: AppView) => void;
   user: UserSession | null;
-  login: (email: string, name: string, role?: string) => void;
+  login: (email: string, pass: string) => Promise<boolean>;
   logout: () => void;
-  registerUser: (email: string, name: string, company: string) => void;
+  registerUser: (email: string, name: string, phone: string, pass: string, company: string) => Promise<boolean>;
   theme: VisualTheme;
   setTheme: (t: VisualTheme) => void;
   settings: CrawlSettings;
@@ -66,6 +98,20 @@ interface SEOContextType {
   setSearchQuery: (q: string) => void;
   filterStatus: 'all' | 'high-score' | 'low-score' | 'warnings';
   setFilterStatus: (status: 'all' | 'high-score' | 'low-score' | 'warnings') => void;
+  
+  // Custom Plan, Payment, and Admin Panel features
+  adminSettings: AdminSettingsType;
+  fetchAdminSettings: () => Promise<void>;
+  updateAdminSettingsOnServer: (settings: AdminSettingsType) => Promise<void>;
+  adminLogin: (phone: string, pin: string) => Promise<boolean>;
+  syncUserSession: (email: string) => Promise<void>;
+  upgradeUserPlan: (plan: 'basic' | 'standard' | 'premium', details: { txid?: string, method?: string, cardholderName?: string, cardNumber?: string, paypalEmail?: string }) => Promise<void>;
+  claimFreePlan: () => Promise<boolean>;
+
+  // Multi-language localization support
+  currentLanguage: LanguageCode;
+  setLanguage: (lang: LanguageCode) => void;
+  t: (key: string) => string;
 }
 
 const SEOContext = createContext<SEOContextType | undefined>(undefined);
@@ -216,17 +262,10 @@ const SAMPLE_REPORTS: SEOAuditReport[] = [
 ];
 
 export function SEOProvider({ children }: { children: ReactNode }) {
-  const [currentView, setView] = useState<AppView>('dashboard');
+  const [currentView, setView] = useState<AppView>('login');
   const [user, setUser] = useState<UserSession | null>(() => {
     const saved = localStorage.getItem('seo_user');
-    return saved ? JSON.parse(saved) : {
-      email: 'analyst@seopro.com',
-      name: 'Alex Sterling',
-      role: 'Premium Developer',
-      credits: 88,
-      company: 'Growth Labs LLC',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'
-    };
+    return saved ? JSON.parse(saved) : null;
   });
   
   const [theme, setThemeState] = useState<VisualTheme>(() => {
@@ -252,6 +291,148 @@ export function SEOProvider({ children }: { children: ReactNode }) {
   const [historyList, setHistoryList] = useState<AuditHistoryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'high-score' | 'low-score' | 'warnings'>('all');
+
+  // Admin and payment states
+  const [adminSettings, setAdminSettings] = useState<AdminSettingsType>({
+    binanceEnabled: true,
+    cardEnabled: false,
+    paypalEnabled: false,
+    binanceAddress: '',
+    binanceNetwork: '',
+    paypalEmail: '',
+    bankName: '',
+    bankBranch: '',
+    bankAccountHolder: '',
+    bankAccountNumber: ''
+  });
+
+  // Multi-language state
+  const [currentLanguage, setCurrentLanguageState] = useState<LanguageCode>(() => {
+    return (localStorage.getItem('seo_language') as LanguageCode) || 'en';
+  });
+
+  const setLanguage = (lang: LanguageCode) => {
+    setCurrentLanguageState(lang);
+    localStorage.setItem('seo_language', lang);
+  };
+
+  const t = (key: string): string => {
+    const translationsForLang = TRANSLATIONS[currentLanguage] || TRANSLATIONS['en'];
+    return translationsForLang[key] || TRANSLATIONS['en'][key] || key;
+  };
+
+  const fetchAdminSettings = async () => {
+    try {
+      const res = await fetch('/api/admin/settings');
+      if (res.ok) {
+        const data = await res.json();
+        setAdminSettings(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch admin settings:', err);
+    }
+  };
+
+  const updateAdminSettingsOnServer = async (newSettings: AdminSettingsType) => {
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSettings)
+      });
+      if (res.ok) {
+        setAdminSettings(newSettings);
+        addToast('Admin configurations updated successfully.', 'success');
+      } else {
+        addToast('Failed to save settings.', 'error');
+      }
+    } catch (err) {
+      addToast('Error communicating with administration server.', 'error');
+    }
+  };
+
+  const syncUserSession = async (email: string, name?: string, company?: string) => {
+    try {
+      const res = await fetch('/api/users/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name, company })
+      });
+      if (res.ok) {
+        const synced = await res.json();
+        const updatedSession: UserSession = {
+          email: synced.email,
+          name: synced.name,
+          role: synced.plan === 'premium' ? 'Premium Developer' : synced.plan === 'standard' ? 'SEO Analyst' : 'Guest Explorer',
+          credits: synced.credits,
+          company: synced.company || 'Personal Console',
+          plan: synced.plan,
+          lastAuditTimestamp: synced.lastAuditTimestamp,
+          isAdmin: user?.isAdmin || synced.isAdmin || false,
+          phone: synced.phone || '',
+          claimedFreePlan: synced.claimedFreePlan,
+          pendingUpgrade: synced.pendingUpgrade,
+          avatarUrl: synced.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(synced.name)}`
+        };
+        setUser(updatedSession);
+        localStorage.setItem('seo_user', JSON.stringify(updatedSession));
+      }
+    } catch (err) {
+      console.error('User sync failed:', err);
+    }
+  };
+
+  const upgradeUserPlan = async (plan: 'basic' | 'standard' | 'premium', details: { txid?: string, method?: string, cardholderName?: string, cardNumber?: string, paypalEmail?: string }) => {
+    if (!user) return;
+    try {
+      const response = await fetch('/api/users/request-upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: user.email, 
+          plan, 
+          txid: details.txid, 
+          paymentMethod: details.method,
+          cardholderName: details.cardholderName,
+          cardNumber: details.cardNumber,
+          paypalEmail: details.paypalEmail
+        }),
+      });
+      if (response.ok) {
+        await syncUserSession(user.email);
+        addToast('পেমেন্ট অনুরোধ জমা দেওয়া হয়েছে! এডমিন এটি এপ্রুভ করলে ক্রেডিট পাবেন।', 'success');
+        setView('dashboard');
+      } else {
+        addToast('Failed to upgrade subscription.', 'error');
+      }
+    } catch (err) {
+      addToast('Payment network error.', 'error');
+    }
+  };
+
+  const adminLogin = async (phone: string, pin: string) => {
+    const isMatched = (phone.trim().toLowerCase() === 'seoai@gmail.com' && pin === 'Rabby12@#@#@%rmkja') || 
+                      (phone === '01923776959' && pin === 'Rabby102030');
+    if (isMatched) {
+      const adminSession: UserSession = {
+        email: 'seoai@gmail.com',
+        name: 'Super Admin Rabby',
+        role: 'Premium Developer',
+        credits: 9999,
+        company: 'SEO AI PRO Administration',
+        plan: 'premium',
+        isAdmin: true,
+        phone: phone,
+        avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=AdminRabby`
+      };
+      setUser(adminSession);
+      localStorage.setItem('seo_user', JSON.stringify(adminSession));
+      addToast('Administrative Access Granted!', 'success');
+      setView('admin');
+      return true;
+    }
+    return false;
+  };
 
   // Load history from express database container
   const reloadHistory = async () => {
@@ -326,34 +507,119 @@ export function SEOProvider({ children }: { children: ReactNode }) {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
-  const login = (email: string, name: string, role = 'Premium Developer') => {
-    const newSession: UserSession = {
-      email,
-      name,
-      role: role as any,
-      credits: 99,
-      company: 'Growth Labs LLC',
-      avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`
-    };
-    setUser(newSession);
-    localStorage.setItem('seo_user', JSON.stringify(newSession));
-    addToast(`Welcome back, ${name}! Session initialized.`, 'success');
-    setView('dashboard');
+  const login = async (emailOrPhone: string, pass: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailOrPhone, password: pass }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const synced = data.user;
+        const updatedSession: UserSession = {
+          email: synced.email,
+          name: synced.name,
+          role: synced.isAdmin ? 'Premium Developer' : synced.plan === 'premium' ? 'Premium Developer' : synced.plan === 'standard' ? 'SEO Analyst' : 'Guest Explorer',
+          credits: synced.credits,
+          company: synced.company || 'Personal Console',
+          plan: synced.plan,
+          lastAuditTimestamp: synced.lastAuditTimestamp,
+          isAdmin: synced.isAdmin || false,
+          phone: synced.phone || '',
+          claimedFreePlan: synced.claimedFreePlan,
+          pendingUpgrade: synced.pendingUpgrade,
+          avatarUrl: synced.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(synced.name)}`
+        };
+        setUser(updatedSession);
+        localStorage.setItem('seo_user', JSON.stringify(updatedSession));
+        addToast(`সফলভাবে লগইন করা হয়েছে!`, 'success');
+        if (synced.isAdmin) {
+          setView('admin');
+        } else {
+          setView('dashboard');
+        }
+        return true;
+      } else {
+        const errData = await response.json();
+        addToast(errData.error || 'ভুল ইমেইল/পাসওয়ার্ড! দয়া করে আবার চেষ্টা করুন।', 'error');
+        return false;
+      }
+    } catch (err) {
+      addToast('Failed to connect login session.', 'error');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const registerUser = (email: string, name: string, company: string) => {
-    const newSession: UserSession = {
-      email,
-      name,
-      role: 'SEO Analyst',
-      credits: 50,
-      company,
-      avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`
-    };
-    setUser(newSession);
-    localStorage.setItem('seo_user', JSON.stringify(newSession));
-    addToast(`Registration complete! Active workspace: ${company}`, 'success');
-    setView('dashboard');
+  const registerUser = async (email: string, name: string, phone: string, pass: string, company: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name, phone, password: pass, company }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const synced = data.user;
+        const updatedSession: UserSession = {
+          email: synced.email,
+          name: synced.name,
+          role: 'Guest Explorer',
+          credits: synced.credits,
+          company: synced.company || 'Personal Console',
+          plan: synced.plan,
+          phone: synced.phone || '',
+          claimedFreePlan: synced.claimedFreePlan,
+          pendingUpgrade: synced.pendingUpgrade,
+          avatarUrl: synced.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(synced.name)}`
+        };
+        setUser(updatedSession);
+        localStorage.setItem('seo_user', JSON.stringify(updatedSession));
+        addToast(`অ্যাকাউন্ট তৈরি সফল হয়েছে! আপনার প্ল্যান নির্বাচন করুন।`, 'success');
+        setView('plans');
+        return true;
+      } else {
+        const errData = await response.json();
+        addToast(errData.error || 'নিবন্ধন ব্যর্থ হয়েছে!', 'error');
+        return false;
+      }
+    } catch (err) {
+      addToast('Failed to register user console.', 'error');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const claimFreePlan = async (): Promise<boolean> => {
+    if (!user) return false;
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/users/claim-free', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email }),
+      });
+      if (response.ok) {
+        await syncUserSession(user.email);
+        addToast('ফ্রি প্ল্যানটি সফলভাবে অ্যাক্টিভেট করা হয়েছে!', 'success');
+        setView('dashboard');
+        return true;
+      } else {
+        const errData = await response.json();
+        addToast(errData.error || 'দাবি করা ব্যর্থ হয়েছে!', 'error');
+        return false;
+      }
+    } catch (err) {
+      addToast('Network connection error.', 'error');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = () => {
@@ -381,17 +647,17 @@ export function SEOProvider({ children }: { children: ReactNode }) {
       setReports(prev => [report, ...prev]);
       setSelectedReportId(report.id);
       
-      // Deduct client-side mock credits for realism
       if (user) {
-        const updatedUser = { ...user, credits: Math.max(0, user.credits - 1) };
-        setUser(updatedUser);
-        localStorage.setItem('seo_user', JSON.stringify(updatedUser));
+        await syncUserSession(user.email);
       }
 
       addToast(`Audit complete! Score: ${report.overallScore}/100`, 'success');
       await reloadHistory();
       return report;
     } catch (err: any) {
+      if (user) {
+        await syncUserSession(user.email);
+      }
       addToast(err.message || 'Audit failed.', 'error');
       throw err;
     } finally {
@@ -426,6 +692,13 @@ export function SEOProvider({ children }: { children: ReactNode }) {
     setView(view);
   };
 
+  useEffect(() => {
+    fetchAdminSettings();
+    if (user?.email) {
+      syncUserSession(user.email);
+    }
+  }, []);
+
   return (
     <SEOContext.Provider value={{
       currentView,
@@ -453,7 +726,16 @@ export function SEOProvider({ children }: { children: ReactNode }) {
       searchQuery,
       setSearchQuery,
       filterStatus,
-      setFilterStatus
+      setFilterStatus,
+      adminSettings,
+      fetchAdminSettings,
+      updateAdminSettingsOnServer,
+      adminLogin,
+      syncUserSession,
+      upgradeUserPlan,
+      currentLanguage,
+      setLanguage,
+      t
     }}>
       {children}
     </SEOContext.Provider>

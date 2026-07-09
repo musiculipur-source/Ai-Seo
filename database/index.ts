@@ -73,3 +73,120 @@ export async function deleteReportFromDb(id: string): Promise<void> {
     // Ignore
   }
 }
+
+// User Record Interface
+export interface UserRecord {
+  email: string;
+  name: string;
+  phone?: string;
+  password?: string;
+  plan: 'basic' | 'standard' | 'premium';
+  lastAuditTimestamp?: string;
+  credits: number;
+  company?: string;
+  avatarUrl?: string;
+  joinedAt?: string;
+  claimedFreePlan?: boolean;
+  pendingUpgrade?: {
+    plan: 'basic' | 'standard' | 'premium';
+    txid?: string;
+    paymentMethod?: string;
+    cardholderName?: string;
+    cardNumber?: string;
+    paypalEmail?: string;
+    requestedAt: string;
+  } | null;
+}
+
+// Admin Settings Interface
+export interface AdminSettings {
+  binanceEnabled: boolean;
+  cardEnabled: boolean;
+  paypalEnabled: boolean;
+  binanceAddress?: string;
+  binanceNetwork?: string;
+  paypalEmail?: string;
+  bankName?: string;
+  bankBranch?: string;
+  bankAccountHolder?: string;
+  bankAccountNumber?: string;
+}
+
+const USERS_FILE = path.join(process.cwd(), 'reports', 'users.json');
+const SETTINGS_FILE = path.join(process.cwd(), 'reports', 'admin_settings.json');
+
+// Users Operations
+export async function getUsers(): Promise<UserRecord[]> {
+  await ensureDir();
+  try {
+    const content = await fs.readFile(USERS_FILE, 'utf-8');
+    return JSON.parse(content) as UserRecord[];
+  } catch {
+    return [];
+  }
+}
+
+export async function saveUser(user: UserRecord): Promise<void> {
+  await ensureDir();
+  const users = await getUsers();
+  const existingIndex = users.findIndex(u => u.email.toLowerCase() === user.email.toLowerCase());
+  
+  if (existingIndex > -1) {
+    users[existingIndex] = { ...users[existingIndex], ...user };
+  } else {
+    users.push({
+      ...user,
+      joinedAt: user.joinedAt || new Date().toISOString()
+    });
+  }
+  
+  await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
+}
+
+export async function getUserByEmail(email: string): Promise<UserRecord | null> {
+  if (!email) return null;
+  const users = await getUsers();
+  const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  return found || null;
+}
+
+// Admin Settings Operations
+export async function getAdminSettings(): Promise<AdminSettings> {
+  await ensureDir();
+  try {
+    const content = await fs.readFile(SETTINGS_FILE, 'utf-8');
+    const parsed = JSON.parse(content);
+    return {
+      binanceEnabled: parsed.binanceEnabled !== false,
+      cardEnabled: !!parsed.cardEnabled,
+      paypalEnabled: !!parsed.paypalEnabled,
+      binanceAddress: parsed.binanceAddress || '',
+      binanceNetwork: parsed.binanceNetwork || '',
+      paypalEmail: parsed.paypalEmail || '',
+      bankName: parsed.bankName || '',
+      bankBranch: parsed.bankBranch || '',
+      bankAccountHolder: parsed.bankAccountHolder || '',
+      bankAccountNumber: parsed.bankAccountNumber || ''
+    };
+  } catch {
+    // Default settings
+    return {
+      binanceEnabled: true,
+      cardEnabled: false,
+      paypalEnabled: false,
+      binanceAddress: '',
+      binanceNetwork: '',
+      paypalEmail: '',
+      bankName: '',
+      bankBranch: '',
+      bankAccountHolder: '',
+      bankAccountNumber: ''
+    };
+  }
+}
+
+export async function saveAdminSettings(settings: AdminSettings): Promise<void> {
+  await ensureDir();
+  await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
+}
+

@@ -10,8 +10,12 @@ import {
   LoginPage, 
   RegisterPage, 
   ProfilePage, 
-  NotFoundPage 
+  NotFoundPage,
+  KeywordGeneratorPage,
+  YoutubeSEOPage
 } from './components/PageViews';
+import PlansPage from './components/PlansPage';
+import AdminPanel from './components/AdminPanel';
 
 function AppContent() {
   const { currentView, user } = useSEO();
@@ -42,6 +46,14 @@ function AppContent() {
         return <RegisterPage />;
       case 'profile':
         return <ProfilePage />;
+      case 'plans':
+        return <PlansPage />;
+      case 'admin':
+        return <AdminPanel />;
+      case 'keyword-generator':
+        return <KeywordGeneratorPage />;
+      case 'youtube-seo':
+        return <YoutubeSEOPage />;
       case '404':
         return <NotFoundPage />;
       default:

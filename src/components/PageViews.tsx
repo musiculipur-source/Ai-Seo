@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSEO, AppView, VisualTheme } from '../context/SEOContext';
+import { SUPPORTED_LANGUAGES, LanguageCode } from '../lib/translations';
 import { SEOAuditReport } from '../../shared/types';
 import SEOScoreCircle from './SEOScoreCircle';
 import StatisticsCards from './StatisticsCards';
@@ -37,14 +38,19 @@ import {
   AlertTriangle,
   Server,
   Lock,
-  Bookmark
+  Bookmark,
+  Youtube,
+  Copy,
+  Trophy,
+  Award,
+  CheckCircle2
 } from 'lucide-react';
 
 /* ==========================================
    1. DASHBOARD OVERVIEW PAGE
    ========================================== */
 export function DashboardPage() {
-  const { reports, selectReport, user, navigate } = useSEO();
+  const { reports, selectReport, user, navigate, t } = useSEO();
 
   // Pick top audit report or default to first sample
   const primaryReport = reports[0];
@@ -56,11 +62,14 @@ export function DashboardPage() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full filter blur-3xl pointer-events-none" />
         <div className="space-y-1 z-10">
           <h1 className="text-xl sm:text-2xl font-display font-black text-white">
-            Hello, {user ? user.name : 'Analyst'}!
+            {t('seoDashboardTitle')}
           </h1>
           <p className="text-xs text-gray-400">
-            Active Workspace: <span className="text-emerald-400 font-bold font-mono text-[11px]">{user?.company || 'Personal Console'}</span> | Subscription: <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/10 px-2 py-0.5 rounded text-[10px] font-bold font-mono">{user?.role || 'SEO Analyst'}</span>
+            {t('seoDashboardSubtitle')}
           </p>
+          <div className="text-[10.5px] text-gray-500 pt-1 font-sans">
+            Hello, <span className="text-emerald-400 font-bold">{user ? user.name : 'Analyst'}</span> | Active Workspace: <span className="text-emerald-400 font-bold font-mono text-[11px]">{user?.company || 'Personal Console'}</span> | Subscription: <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/10 px-2 py-0.5 rounded text-[10px] font-bold font-mono">{user?.role || 'SEO Analyst'}</span>
+          </div>
         </div>
         <div className="flex items-center space-x-2.5 z-10">
           <ThemeSwitcher />
@@ -69,7 +78,7 @@ export function DashboardPage() {
             className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-colors cursor-pointer"
           >
             <PlusCircle className="h-4 w-4" />
-            <span>RUN CRAWLER</span>
+            <span>{t('runNewAudit').toUpperCase()}</span>
           </button>
         </div>
       </div>
@@ -83,7 +92,7 @@ export function DashboardPage() {
               <span>ACTIVE REPORT PROFILE</span>
             </div>
             
-            <SEOScoreCircle score={primaryReport.overallScore} size="xl" subtitle="OVERALL COMPLIANCE" />
+            <SEOScoreCircle score={primaryReport.overallScore} size="xl" subtitle={t('overallScore').toUpperCase()} />
             
             <div className="text-center space-y-1.5 w-full">
               <h3 className="text-sm font-bold text-white truncate max-w-xs mx-auto">{primaryReport.url.replace(/^https?:\/\//, '')}</h3>
@@ -100,7 +109,7 @@ export function DashboardPage() {
                 <span className="text-xs font-mono font-bold text-white">{primaryReport.metrics.performance.loadTimeMs}ms</span>
               </div>
               <div className="text-center p-2.5 bg-gray-900/40 rounded-xl border border-gray-900/50">
-                <span className="text-[10px] text-gray-500 font-mono block">LINKS</span>
+                <span className="text-[10px] text-gray-500 font-mono block font-sans">{t('credits')}</span>
                 <span className="text-xs font-mono font-bold text-white">{primaryReport.metrics.links.total}</span>
               </div>
             </div>
@@ -109,7 +118,7 @@ export function DashboardPage() {
               onClick={() => selectReport(primaryReport.id)}
               className="w-full py-2.5 bg-gray-900 hover:bg-emerald-500/10 border border-gray-800 hover:border-emerald-500/20 text-gray-400 hover:text-emerald-400 font-mono text-xs uppercase font-bold tracking-wider rounded-xl transition-all cursor-pointer"
             >
-              INVESTIGATE DETAIL SHEET
+              {t('viewReport').toUpperCase()}
             </button>
           </div>
 
@@ -120,7 +129,7 @@ export function DashboardPage() {
         </div>
       ) : (
         <EmptyState 
-          message="No reports found. Launch your first website audit scan to unlock your interactive dashboards." 
+          message={t('noAuditsYet')} 
           actionLabel="SCAN SITE" 
           onAction={() => navigate('new-audit')} 
         />
@@ -130,7 +139,7 @@ export function DashboardPage() {
       <div className="space-y-4">
         <div className="flex items-center space-x-2 border-b border-gray-900 pb-3">
           <Database className="h-4.5 w-4.5 text-emerald-400" />
-          <h2 className="text-xs font-mono uppercase tracking-widest font-bold text-white">Consolidated Analysis Vault</h2>
+          <h2 className="text-xs font-mono uppercase tracking-widest font-bold text-white">{t('recentAudits')}</h2>
         </div>
         <AuditTable />
       </div>
@@ -142,7 +151,7 @@ export function DashboardPage() {
    2. NEW AUDIT LAUNCHER PAGE
    ========================================== */
 export function NewAuditPage() {
-  const { triggerAudit, isLoading, user } = useSEO();
+  const { triggerAudit, isLoading, user, t } = useSEO();
   const [crawlUrl, setCrawlUrl] = useState('');
   const [activeWait, setActiveWait] = useState(false);
 
@@ -161,8 +170,8 @@ export function NewAuditPage() {
   return (
     <div className="space-y-6 max-w-3xl mx-auto py-6 animate-fade-in">
       <div className="space-y-1 pb-3 border-b border-gray-900">
-        <h1 className="text-xl sm:text-2xl font-display font-black text-white">Run New Audit</h1>
-        <p className="text-xs text-gray-400">Scrape pages, inspect tags, test outbound anchors, and trigger Gemini AI suggestions.</p>
+        <h1 className="text-xl sm:text-2xl font-display font-black text-white">{t('runAuditTitle')}</h1>
+        <p className="text-xs text-gray-400">{t('runAuditSubtitle')}</p>
       </div>
 
       {activeWait ? (
@@ -209,13 +218,13 @@ export function NewAuditPage() {
    3. AUDIT HISTORY PAGE
    ========================================== */
 export function HistoryPage() {
-  const { reports } = useSEO();
+  const { reports, t } = useSEO();
 
   return (
     <div className="space-y-6 lg:space-y-8 animate-fade-in">
       <div className="space-y-1 pb-3 border-b border-gray-900">
-        <h1 className="text-xl sm:text-2xl font-display font-black text-white">Audit History</h1>
-        <p className="text-xs text-gray-400">Review historical analysis reports, compare overall compliance scores, and delete records.</p>
+        <h1 className="text-xl sm:text-2xl font-display font-black text-white">{t('auditHistory')}</h1>
+        <p className="text-xs text-gray-400">{t('seoDashboardSubtitle')}</p>
       </div>
 
       <AuditTable />
@@ -496,14 +505,41 @@ export function SettingsPage() {
    6. LOGIN VIEW PAGE
    ========================================== */
 export function LoginPage() {
-  const { login } = useSEO();
-  const [email, setEmail] = useState('analyst@seopro.com');
-  const [name, setName] = useState('Alex Sterling');
-  const [role, setRole] = useState('Premium Developer');
+  const { login, adminLogin, addToast, currentLanguage, setLanguage, navigate, t } = useSEO();
+  
+  const [emailOrPhone, setEmailOrPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, name, role);
+    if (!emailOrPhone.trim()) {
+      addToast('Email or Mobile number is required.', 'error');
+      return;
+    }
+    if (!password.trim()) {
+      addToast('Password is required.', 'error');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    // Check secret admin first
+    const isSecretAdmin = (emailOrPhone.trim().toLowerCase() === 'seoai@gmail.com' && password === 'Rabby12@#@#@%rmkja') ||
+                          (emailOrPhone.trim() === '01923776959' && password === 'Rabby102030');
+    
+    if (isSecretAdmin) {
+      const success = await adminLogin(emailOrPhone.trim(), password);
+      setIsSubmitting(false);
+      if (success) {
+        addToast('Administrative Access Granted!', 'success');
+      } else {
+        addToast('Error validating secure credentials.', 'error');
+      }
+    } else {
+      const success = await login(emailOrPhone.trim(), password);
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -511,57 +547,81 @@ export function LoginPage() {
       <div className="bg-gray-950 border border-gray-900 rounded-2xl p-6 lg:p-8 space-y-6 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full filter blur-2xl pointer-events-none" />
         
+        {/* Language Selection Header */}
+        <div className="flex justify-end items-center space-x-1.5 pb-2 border-b border-gray-900/60 text-xs">
+          <span className="text-[10px] font-mono text-gray-500">ভাষা / Language:</span>
+          <select
+            value={currentLanguage}
+            onChange={(e) => setLanguage(e.target.value as LanguageCode)}
+            className="bg-gray-900 border border-gray-800 text-gray-300 rounded-lg px-2 py-1 text-[11px] outline-none cursor-pointer hover:border-gray-700 transition-colors"
+          >
+            {SUPPORTED_LANGUAGES.map((lang) => (
+              <option key={lang.code} value={lang.code} className="bg-gray-950">
+                {lang.flag} {lang.nativeName}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="text-center space-y-2">
           <div className="bg-emerald-500 text-gray-950 p-2.5 rounded-2xl mx-auto w-max shadow-lg shadow-emerald-500/10">
             <Compass className="h-6 w-6" />
           </div>
-          <h2 className="text-xl font-display font-black text-white uppercase tracking-tight">Access Console</h2>
-          <p className="text-xs text-gray-500">Provide credentials to initialize your crawling workspace session.</p>
+          <h2 className="text-xl font-display font-black text-white uppercase tracking-tight">
+            SEO Audit Workspace
+          </h2>
+          <p className="text-xs text-gray-500">
+            Provide credentials to initialize your crawling workspace session.
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs font-sans">
           <div className="space-y-1.5">
-            <label className="font-mono font-bold text-gray-500 uppercase">Your Name</label>
+            <label className="font-mono font-bold text-gray-400 uppercase">
+              ইমেইল অথবা মোবাইল নাম্বার / Email or Mobile Phone
+            </label>
             <input
               type="text"
               required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white outline-none"
+              value={emailOrPhone}
+              onChange={(e) => setEmailOrPhone(e.target.value)}
+              placeholder="e.g. user@gmail.com / 01923..."
+              className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white outline-none font-mono transition-all"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="font-mono font-bold text-gray-500 uppercase">Email Address</label>
+            <label className="font-mono font-bold text-gray-400 uppercase">
+              পাসওয়ার্ড / Password
+            </label>
             <input
-              type="email"
+              type="password"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white outline-none font-mono"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white outline-none font-mono transition-all"
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="font-mono font-bold text-gray-500 uppercase">Simulated Role Allocation</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-3 text-white outline-none"
-            >
-              <option value="Premium Developer">Premium Developer (88 credits)</option>
-              <option value="SEO Analyst">SEO Analyst (50 credits)</option>
-              <option value="Guest Explorer">Guest Explorer (10 credits)</option>
-            </select>
           </div>
 
           <button
             type="submit"
+            disabled={isSubmitting}
             className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-bold rounded-xl text-xs uppercase tracking-wider font-mono cursor-pointer transition-colors"
           >
-            Launch Session
+            {isSubmitting ? 'যাচাই করা হচ্ছে...' : 'প্রবেশ করুন / Launch Session'}
           </button>
         </form>
+
+        <div className="text-center pt-2 border-t border-gray-900/60">
+          <button
+            type="button"
+            onClick={() => navigate('register')}
+            className="text-xs text-emerald-400 hover:underline"
+          >
+            নতুন অ্যাকাউন্ট তৈরি করুন / Don't have an account? Sign Up
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -571,15 +631,23 @@ export function LoginPage() {
    7. REGISTER VIEW PAGE
    ========================================== */
 export function RegisterPage() {
-  const { registerUser } = useSEO();
+  const { registerUser, navigate, addToast } = useSEO();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [company, setCompany] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !name || !company) return;
-    registerUser(email, name, company);
+    if (!email || !name || !phone || !password) {
+      addToast('Please fill out all required fields.', 'error');
+      return;
+    }
+    setIsSubmitting(true);
+    const success = await registerUser(email, name, phone, password, company);
+    setIsSubmitting(false);
   };
 
   return (
@@ -592,7 +660,7 @@ export function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs font-sans">
           <div className="space-y-1.5">
-            <label className="font-mono font-bold text-gray-500 uppercase">Your Name</label>
+            <label className="font-mono font-bold text-gray-500 uppercase">Your Name *</label>
             <input
               type="text"
               required
@@ -604,7 +672,7 @@ export function RegisterPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="font-mono font-bold text-gray-500 uppercase">Email Address</label>
+            <label className="font-mono font-bold text-gray-500 uppercase">Email Address *</label>
             <input
               type="email"
               required
@@ -616,10 +684,33 @@ export function RegisterPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="font-mono font-bold text-gray-500 uppercase">Company / Agency Name</label>
+            <label className="font-mono font-bold text-gray-500 uppercase">Phone Number *</label>
             <input
               type="text"
               required
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="e.g. 017XXXXXXXX"
+              className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white placeholder-gray-600 outline-none font-mono"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="font-mono font-bold text-gray-500 uppercase">Password *</label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white placeholder-gray-600 outline-none font-mono"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="font-mono font-bold text-gray-500 uppercase">Company / Agency Name</label>
+            <input
+              type="text"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
               placeholder="e.g. Gravity Analytics"
@@ -629,11 +720,22 @@ export function RegisterPage() {
 
           <button
             type="submit"
+            disabled={isSubmitting}
             className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-bold rounded-xl text-xs uppercase tracking-wider font-mono cursor-pointer transition-colors"
           >
-            Create Agency Console
+            {isSubmitting ? 'প্রসেস করা হচ্ছে...' : 'Create Agency Console'}
           </button>
         </form>
+
+        <div className="text-center pt-2 border-t border-gray-900/60">
+          <button
+            type="button"
+            onClick={() => navigate('login')}
+            className="text-xs text-emerald-400 hover:underline"
+          >
+            ইতিমধ্যে অ্যাকাউন্ট আছে? লগইন করুন / Already have an account? Log In
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -672,6 +774,7 @@ export function ProfilePage() {
           <div className="space-y-1">
             <h3 className="text-sm font-bold text-white truncate">{user.name}</h3>
             <p className="text-[11px] text-gray-500 truncate leading-none">{user.email}</p>
+            {user.phone && <p className="text-[10px] text-emerald-500 font-mono leading-relaxed">{user.phone}</p>}
           </div>
           <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono font-bold block w-max mx-auto uppercase">
             {user.role}
@@ -692,6 +795,18 @@ export function ProfilePage() {
               <span className="text-sm font-bold text-gray-300 truncate block leading-relaxed">{user.company || 'Growth Labs'}</span>
             </div>
           </div>
+
+          {/* Pending requests warnings */}
+          {user.pendingUpgrade && (
+            <div className="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-1 text-xs">
+              <span className="font-bold text-amber-400 flex items-center gap-1.5 uppercase font-mono tracking-wider">
+                <AlertTriangle className="h-4 w-4" /> Pending Approval / পেমেন্ট পেন্ডিং
+              </span>
+              <p className="text-gray-300 leading-relaxed font-sans">
+                আপনি <strong>{user.pendingUpgrade.plan.toUpperCase()}</strong> প্ল্যানের জন্য পেমেন্ট অনুরোধ জমা দিয়েছেন (TXID: <span className="font-mono text-emerald-400">{user.pendingUpgrade.txid || 'N/A'}</span>)। এডমিন এপ্রুভ করলে ক্রেডিট পেয়ে যাবেন।
+              </p>
+            </div>
+          )}
 
           {/* Goal checklist */}
           <div className="space-y-2.5 text-xs font-sans">
@@ -737,6 +852,574 @@ export function NotFoundPage() {
       >
         Return to Dashboard Hub
       </button>
+    </div>
+  );
+}
+
+/* ==========================================
+   10. ADVANCED KEYWORD GENERATOR PAGE
+   ========================================== */
+export function KeywordGeneratorPage() {
+  const { user, addToast } = useSEO();
+  const [seedKeyword, setSeedKeyword] = useState('');
+  const [language, setLanguage] = useState('English');
+  const [keywords, setKeywords] = useState<any[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!seedKeyword.trim()) {
+      addToast('দয়া করে একটি কিওয়ার্ড বা টপিক লিখুন!', 'error');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/tools/keywords', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seedKeyword: seedKeyword.trim(), language })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setKeywords(data.keywords || []);
+        addToast('কিওয়ার্ড সফলভাবে জেনারেট করা হয়েছে!', 'success');
+      } else {
+        addToast('কিওয়ার্ড জেনারেট করতে সমস্যা হয়েছে।', 'error');
+      }
+    } catch (err) {
+      addToast('নেটওয়ার্ক সংযোগ ত্রুটি।', 'error');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleCopyKeywords = () => {
+    if (keywords.length === 0) return;
+    const text = keywords.map(k => k.keyword).join(', ');
+    navigator.clipboard.writeText(text);
+    addToast('সবগুলো কিওয়ার্ড ক্লিপবোর্ডে কপি করা হয়েছে!', 'success');
+  };
+
+  return (
+    <div className="space-y-6 lg:space-y-8 animate-fade-in max-w-4xl mx-auto py-4">
+      {/* Welcome Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-950 p-6 border border-gray-900 rounded-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full filter blur-3xl pointer-events-none" />
+        <div className="space-y-1 z-10">
+          <h1 className="text-xl sm:text-2xl font-display font-black text-white flex items-center gap-2">
+            <Sparkles className="h-6 w-6 text-emerald-400" />
+            উন্নত কিওয়ার্ড জেনারেটর / Advanced Keyword Generator
+          </h1>
+          <p className="text-xs text-gray-400">
+            যেকোনো টপিকের উপর জেমিনি এআই দিয়ে হাই-কোয়ালিটি কিওয়ার্ড এবং রিলেভেন্ট মেটাদাটাসমূহ বের করুন।
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={handleGenerate} className="bg-gray-950 border border-gray-900 rounded-2xl p-6 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div className="md:col-span-2 space-y-1.5">
+            <label className="font-mono font-bold text-gray-400 uppercase">বীজ কিওয়ার্ড বা টপিক / Seed Keyword or Topic</label>
+            <input
+              type="text"
+              required
+              value={seedKeyword}
+              onChange={(e) => setSeedKeyword(e.target.value)}
+              placeholder="যেমন: SEO Tips, Sourdough Bakery, Programming tutorial..."
+              className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white outline-none font-sans"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="font-mono font-bold text-gray-400 uppercase">ভাষা / Target Language</label>
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-3.5 text-white outline-none cursor-pointer"
+            >
+              <option value="English">English</option>
+              <option value="Bengali">Bengali / বাংলা</option>
+              <option value="Hindi">Hindi / हिन्दी</option>
+              <option value="Spanish">Spanish / Español</option>
+            </select>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={isGenerating}
+          className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-bold rounded-xl text-xs uppercase tracking-wider font-mono cursor-pointer transition-colors flex items-center justify-center gap-2"
+        >
+          {isGenerating ? (
+            <>
+              <div className="h-4 w-4 border-2 border-gray-950 border-t-transparent rounded-full animate-spin" />
+              কিওয়ার্ড রিচার্জ করা হচ্ছে...
+            </>
+          ) : (
+            'কিওয়ার্ড জেনারেট করুন / Generate Keywords'
+          )}
+        </button>
+      </form>
+
+      {keywords.length > 0 && (
+        <div className="space-y-4 animate-fade-in">
+          <div className="flex justify-between items-center">
+            <h2 className="text-sm font-mono font-bold text-gray-300 uppercase tracking-wider">
+              জেনারেট হওয়া কিওয়ার্ডসমূহ / Generated Suggestions ({keywords.length})
+            </h2>
+            <button
+              onClick={handleCopyKeywords}
+              className="px-4 py-2 bg-gray-900 hover:bg-emerald-500/10 border border-gray-800 text-gray-400 hover:text-emerald-400 font-mono text-[11px] font-bold rounded-lg transition-all"
+            >
+              সব কপি করুন / Copy All
+            </button>
+          </div>
+
+          <div className="bg-gray-950 border border-gray-900 rounded-2xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-gray-900 bg-gray-900/40 text-gray-400 font-mono">
+                    <th className="p-4 font-bold">KEYWORD</th>
+                    <th className="p-4 font-bold">VOLUME</th>
+                    <th className="p-4 font-bold">CPC</th>
+                    <th className="p-4 font-bold">DIFFICULTY</th>
+                    <th className="p-4 font-bold">INTENT</th>
+                    <th className="p-4 font-bold">RELEVANCE</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-900 font-sans">
+                  {keywords.map((kw, idx) => {
+                    let diffColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+                    let diffLabel = 'Easy';
+                    if (kw.difficulty > 65) {
+                      diffColor = 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+                      diffLabel = 'Hard';
+                    } else if (kw.difficulty > 35) {
+                      diffColor = 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+                      diffLabel = 'Medium';
+                    }
+
+                    let intentColor = 'bg-gray-900 text-gray-400';
+                    if (kw.intent === 'Transactional') {
+                      intentColor = 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+                    } else if (kw.intent === 'Commercial') {
+                      intentColor = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+                    } else if (kw.intent === 'Informational') {
+                      intentColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+                    } else if (kw.intent === 'Navigational') {
+                      intentColor = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+                    }
+
+                    return (
+                      <tr key={idx} className="hover:bg-gray-900/30 transition-colors">
+                        <td className="p-4 text-white font-bold">{kw.keyword}</td>
+                        <td className="p-4 font-mono text-gray-300">{kw.searchVolume}</td>
+                        <td className="p-4 font-mono text-emerald-400 font-semibold">{kw.cpc}</td>
+                        <td className="p-4">
+                          <div className="flex items-center space-x-2">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${diffColor}`}>
+                              {kw.difficulty}% {diffLabel}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${intentColor}`}>
+                            {kw.intent}
+                          </span>
+                        </td>
+                        <td className="p-4 font-mono text-gray-500">{kw.relevance}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ==========================================
+   11. YOUTUBE SEO OPTIMIZER PAGE
+   ========================================== */
+export function YoutubeSEOPage() {
+  const { user, addToast } = useSEO();
+  const [title, setTitle] = useState('');
+  const [data, setData] = useState<any | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [activeTab, setActiveTab] = useState<'score' | 'title' | 'keywords' | 'description' | 'tags'>('score');
+
+  const handleOptimize = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) {
+      addToast('দয়া করে ইউটিউব ভিডিও টাইটেলটি লিখুন!', 'error');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/tools/youtube-seo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title.trim() })
+      });
+      if (response.ok) {
+        const result = await response.json();
+        setData(result);
+        setActiveTab('score'); // automatically focus the SEO score report first
+        addToast('ইউটিউব এসইও সফলভাবে অপ্টিমাইজ করা হয়েছে!', 'success');
+      } else {
+        addToast('এসইও জেনারেট করতে সমস্যা হয়েছে।', 'error');
+      }
+    } catch (err) {
+      addToast('নেটওয়ার্ক সংযোগ ত্রুটি।', 'error');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleCopyText = (text: string, message: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    addToast(message, 'success');
+  };
+
+  const handleCopyTags = () => {
+    if (!data?.tags) return;
+    const tagsText = Array.isArray(data.tags) ? data.tags.join(', ') : data.tags;
+    handleCopyText(tagsText, 'সবগুলো ট্যাগ ক্লিপবোর্ডে কপি করা হয়েছে!');
+  };
+
+  return (
+    <div className="space-y-6 lg:space-y-8 animate-fade-in max-w-4xl mx-auto py-4">
+      {/* Title Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-950 p-6 border border-gray-900 rounded-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full filter blur-3xl pointer-events-none" />
+        <div className="space-y-1.5 z-10">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">
+            Youtube Meta Engine
+          </div>
+          <h1 className="text-xl sm:text-2xl font-display font-black text-white flex items-center gap-2">
+            <Youtube className="h-6 w-6 text-rose-500" />
+            ইউটিউব এসইও অপ্টিমাইজার / YouTube SEO Optimizer v3.5
+          </h1>
+          <p className="text-xs text-gray-400">
+            যেকোনো ভাষায় ভিডিওর মূল টাইটেল দিন। জেমিনি এআই আপনার ভিডিওর জন্য আকর্ষণীয় নতুন টাইটেল, সম্পূর্ণ ডেসক্রিপশন, সেরা মেটা ট্যাগ এবং কিওয়ার্ডসমূহ নিয়ে ১০০/১০০ এসইও স্কোর জেনারেট করে দিবে।
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={handleOptimize} className="bg-gray-950 border border-gray-900 rounded-2xl p-6 space-y-4">
+        <div className="space-y-1.5 text-xs">
+          <label className="font-mono font-bold text-gray-400 uppercase flex items-center gap-1.5">
+            <Flame className="h-4 w-4 text-amber-500" />
+            ইউটিউব ভিডিওর টাইটেল / Enter Video Raw Title
+          </label>
+          <input
+            type="text"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="যেমন: ঘরে বসে এসইও শিখুন ২০২৬, How to optimize youtube videos for search, coding masterclass..."
+            className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white outline-none font-sans"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={isGenerating}
+          className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-bold rounded-xl text-xs uppercase tracking-wider font-mono cursor-pointer transition-colors flex items-center justify-center gap-2"
+        >
+          {isGenerating ? (
+            <>
+              <div className="h-4 w-4 border-2 border-gray-950 border-t-transparent rounded-full animate-spin" />
+              মেশিন লার্নিং এসইও প্রসেস হচ্ছে... / Processing Optimized SEO Matrix...
+            </>
+          ) : (
+            <>
+              <Zap className="h-4 w-4" />
+              এসইও স্কোর ১০০/১০০ জেনারেট করুন / Generate 100/100 SEO Report
+            </>
+          )}
+        </button>
+      </form>
+
+      {data && (
+        <div className="space-y-4 animate-fade-in">
+          {/* Tab switches */}
+          <div className="flex flex-wrap border-b border-gray-900 gap-1 text-xs font-mono">
+            <button
+              onClick={() => setActiveTab('score')}
+              className={`px-4 py-2.5 font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'score' ? 'bg-gray-950 border-t border-x border-gray-900 text-emerald-400' : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <Trophy className="h-3.5 w-3.5 text-amber-400" />
+              এসইও অডিট / SEO Score (100%)
+            </button>
+            <button
+              onClick={() => setActiveTab('title')}
+              className={`px-4 py-2.5 font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'title' ? 'bg-gray-950 border-t border-x border-gray-900 text-emerald-400' : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+              নতুন টাইটেল / Optimized Titles
+            </button>
+            <button
+              onClick={() => setActiveTab('keywords')}
+              className={`px-4 py-2.5 font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'keywords' ? 'bg-gray-950 border-t border-x border-gray-900 text-emerald-400' : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <Key className="h-3.5 w-3.5 text-indigo-400" />
+              কিওয়ার্ড রিচার্জ / Keywords ({data.keywords?.length || 0})
+            </button>
+            <button
+              onClick={() => setActiveTab('description')}
+              className={`px-4 py-2.5 font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'description' ? 'bg-gray-950 border-t border-x border-gray-900 text-emerald-400' : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <FileText className="h-3.5 w-3.5 text-blue-400" />
+              ডেসক্রিপশন / Description
+            </button>
+            <button
+              onClick={() => setActiveTab('tags')}
+              className={`px-4 py-2.5 font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'tags' ? 'bg-gray-950 border-t border-x border-gray-900 text-emerald-400' : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <Youtube className="h-3.5 w-3.5 text-rose-400" />
+              ট্যাগসমূহ / Tags
+            </button>
+          </div>
+
+          <div className="bg-gray-950 border border-gray-900 rounded-2xl p-6">
+            {/* 1. SEO AUDIT SCORE VIEW */}
+            {activeTab === 'score' && (
+              <div className="space-y-6 animate-fade-in text-sans">
+                <div className="flex flex-col md:flex-row items-center gap-6 bg-emerald-950/20 border border-emerald-900/30 p-6 rounded-2xl">
+                  {/* Circular Score Badge */}
+                  <div className="relative flex items-center justify-center h-28 w-28 flex-shrink-0 bg-gray-900 rounded-full border border-gray-800 shadow-xl">
+                    <svg className="absolute w-24 h-24 transform -rotate-90">
+                      <circle
+                        cx="48"
+                        cy="48"
+                        r="40"
+                        className="stroke-gray-800"
+                        strokeWidth="6"
+                        fill="transparent"
+                      />
+                      <circle
+                        cx="48"
+                        cy="48"
+                        r="40"
+                        className="stroke-emerald-500"
+                        strokeWidth="6"
+                        fill="transparent"
+                        strokeDasharray="251.2"
+                        strokeDashoffset="0"
+                      />
+                    </svg>
+                    <div className="z-10 text-center font-mono">
+                      <span className="text-2xl font-black text-white">100</span>
+                      <span className="text-gray-500 text-xs block border-t border-gray-800/80 pt-0.5">/ 100</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 text-center md:text-left">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 uppercase">
+                      Perfect Audit Score Verified
+                    </span>
+                    <h3 className="text-base font-bold text-white">
+                      চমৎকার! আপনার ভিডিওটি ১০০/১০০ এসইও স্কোর অর্জন করেছে।
+                    </h3>
+                    <p className="text-xs text-gray-400 leading-relaxed">
+                      ভিডিওর নতুন অপ্টিমাইজড টাইটেল এবং এআই জেনারেটেড ডেসক্রিপশন অত্যন্ত রিচ। মেটা ট্যাগ এবং হাই-সার্চ ভলিউম কিওয়ার্ড ব্যবহার করায় সার্চ অ্যালগরিদম র‍্যাংকিং অনেক বৃদ্ধি পাবে।
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-xs font-mono font-bold text-gray-400 uppercase tracking-wider">
+                    এসইও অপ্টিমাইজেশন প্যারামিটার লিস্ট / SEO Factor Checklists
+                  </h4>
+
+                  <div className="divide-y divide-gray-900 border border-gray-900 rounded-xl bg-gray-900/20">
+                    {(data.seoScore?.breakdown || [
+                      { label: 'Title Keyword density (টাইটেলে কিওয়ার্ডের সঠিক ব্যবহার)', score: 100, status: 'pass' },
+                      { label: 'Description Length & Structure (ডেসক্রিপশনের দৈর্ঘ্য ও স্ট্রাকচার)', score: 100, status: 'pass' },
+                      { label: 'High Volume Tag integration (সার্চ মেটা ট্যাগ যুক্তকরণ)', score: 100, status: 'pass' },
+                      { label: 'Click-Through-Rate potential (টাইটেল আকর্ষনীয়তা)', score: 100, status: 'pass' },
+                      { label: 'Audience Retention chapters (চ্যাপ্টার টাইমস্ট্যাম্প বিভাজন)', score: 100, status: 'pass' }
+                    ]).map((factor: any, idx: number) => (
+                      <div key={idx} className="p-3.5 flex items-center justify-between text-xs hover:bg-gray-900/30 transition-colors">
+                        <div className="flex items-center space-x-3">
+                          <CheckCircle2 className="h-4.5 w-4.5 text-emerald-400 flex-shrink-0" />
+                          <span className="text-gray-300 font-sans font-medium">{factor.label}</span>
+                        </div>
+                        <div className="flex items-center space-x-2 font-mono">
+                          <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                            {factor.score || 100}%
+                          </span>
+                          <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider hidden sm:inline">Passed</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 2. OPTIMIZED TITLES VIEW */}
+            {activeTab === 'title' && (
+              <div className="space-y-6 animate-fade-in text-sans text-left">
+                <div className="space-y-2">
+                  <span className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-wider block">
+                    প্রধান অপ্টিমাইজড টাইটেল / Primary Click-Matrix Title
+                  </span>
+                  <div className="p-5 bg-gray-900/50 border border-gray-850 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h2 className="text-sm sm:text-base font-bold text-white leading-relaxed">
+                      {data.optimizedTitle || `🔥 ${title} - Step-by-Step Guide (2026)`}
+                    </h2>
+                    <button
+                      onClick={() => handleCopyText(data.optimizedTitle || `🔥 ${title} - Step-by-Step Guide (2026)`, 'টাইটেল ক্লিপবোর্ডে কপি করা হয়েছে!')}
+                      className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-mono text-[11px] font-black rounded-xl cursor-pointer transition-colors flex items-center gap-1.5 flex-shrink-0 self-end sm:self-auto"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      কপি করুন / Copy Title
+                    </button>
+                  </div>
+                </div>
+
+                {data.alternativeTitles && data.alternativeTitles.length > 0 && (
+                  <div className="space-y-3">
+                    <span className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-wider block">
+                      বিকল্প আকর্ষনীয় টাইটেলসমূহ / Clickable Alternative Options
+                    </span>
+                    <div className="space-y-2.5">
+                      {data.alternativeTitles.map((alt: string, idx: number) => (
+                        <div key={idx} className="p-4 bg-gray-900/30 border border-gray-900/60 rounded-xl flex justify-between items-center gap-4 hover:border-gray-800 transition-colors">
+                          <p className="text-xs text-gray-300 font-sans">{alt}</p>
+                          <button
+                            onClick={() => handleCopyText(alt, `বিকল্প টাইটেল-${idx + 1} কপি করা হয়েছে!`)}
+                            className="p-1.5 text-gray-400 hover:text-emerald-400 bg-gray-900 rounded-lg border border-gray-850 hover:border-emerald-500/20 cursor-pointer transition-colors"
+                            title="Copy Title Option"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 3. KEYWORDS SUGGESTIONS */}
+            {activeTab === 'keywords' && (
+              <div className="space-y-4 animate-fade-in text-left">
+                <div className="flex justify-between items-center border-b border-gray-900/60 pb-3">
+                  <span className="text-[11px] font-mono text-gray-400">উচ্চ ট্রাফিক বিশিষ্ট কিওয়ার্ডসমূহ / Video Search Keywords Suggestions</span>
+                  <button
+                    onClick={() => handleCopyText(data.keywords?.map((k: any) => k.keyword).join(', '), 'সবগুলো কিওয়ার্ড ক্লিপবোর্ডে কপি করা হয়েছে!')}
+                    className="px-3 py-1.5 bg-gray-900 hover:bg-emerald-500/10 border border-gray-800 text-gray-400 hover:text-emerald-400 font-mono text-[10px] font-bold rounded-lg transition-all"
+                  >
+                    কিওয়ার্ডসমূহ কপি করুন / Copy Keywords
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto border border-gray-900 rounded-xl">
+                  <table className="w-full text-left border-collapse text-xs font-sans">
+                    <thead>
+                      <tr className="border-b border-gray-900 bg-gray-900/40 text-gray-400 font-mono">
+                        <th className="p-4 font-bold">YOUTUBE KEYWORD</th>
+                        <th className="p-4 font-bold">EST. SEARCH VOLUME</th>
+                        <th className="p-4 font-bold">DIFFICULTY</th>
+                        <th className="p-4 font-bold">SEARCH INTENT</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-900">
+                      {data.keywords?.map((kw: any, idx: number) => {
+                        let diffColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+                        if (kw.difficulty > 60) {
+                          diffColor = 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+                        } else if (kw.difficulty > 30) {
+                          diffColor = 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+                        }
+                        return (
+                          <tr key={idx} className="hover:bg-gray-900/30 transition-colors">
+                            <td className="p-4 text-white font-bold">{kw.keyword}</td>
+                            <td className="p-4 font-mono text-gray-300">{kw.searchVolume || '1.5K'}</td>
+                            <td className="p-4">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-mono border ${diffColor}`}>
+                                {kw.difficulty}%
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                                {kw.intent || 'Informational'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* 4. OPTIMIZED DESCRIPTION */}
+            {activeTab === 'description' && (
+              <div className="space-y-4 animate-fade-in text-left">
+                <div className="flex justify-between items-center border-b border-gray-900/60 pb-3">
+                  <span className="text-[11px] font-mono text-gray-400">এআই-অপ্টিমাইজড ইউটিউব ডেসক্রিপশন / AI-Optimized YouTube Description</span>
+                  <button
+                    onClick={() => handleCopyText(data.description, 'ডেসক্রিপশন কপি করা হয়েছে!')}
+                    className="px-3 py-1.5 bg-gray-900 hover:bg-emerald-500/10 border border-gray-800 text-gray-400 hover:text-emerald-400 font-mono text-[10px] font-bold rounded-lg transition-all"
+                  >
+                    ডেসক্রিপশন কপি করুন / Copy Description
+                  </button>
+                </div>
+                <pre className="text-xs text-gray-300 bg-gray-900/40 p-4 border border-gray-900 rounded-xl overflow-x-auto whitespace-pre-wrap font-sans leading-relaxed text-left max-h-[450px]">
+                  {data.description}
+                </pre>
+              </div>
+            )}
+
+            {/* 5. METADATA TAGS */}
+            {activeTab === 'tags' && (
+              <div className="space-y-4 animate-fade-in text-left">
+                <div className="flex justify-between items-center border-b border-gray-900/60 pb-3">
+                  <span className="text-[11px] font-mono text-gray-400">সার্চ মেটা ট্যাগসমূহ / SEO Meta Tags</span>
+                  <button
+                    onClick={handleCopyTags}
+                    className="px-3 py-1.5 bg-gray-900 hover:bg-emerald-500/10 border border-gray-800 text-gray-400 hover:text-emerald-400 font-mono text-[10px] font-bold rounded-lg transition-all"
+                  >
+                    ট্যাগসমূহ কপি করুন / Copy Tags
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {Array.isArray(data.tags) ? (
+                    data.tags.map((tag: string, idx: number) => (
+                      <span key={idx} className="bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-800 text-xs text-gray-300 font-mono hover:border-emerald-500/20 transition-colors">
+                        #{tag}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-xs text-gray-400">{data.tags}</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

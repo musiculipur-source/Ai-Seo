@@ -10,23 +10,35 @@ import {
   Compass, 
   Menu, 
   X,
-  Sparkles
+  Sparkles,
+  ShieldAlert,
+  Key,
+  Youtube
 } from 'lucide-react';
 import { useState } from 'react';
+import { SUPPORTED_LANGUAGES, LanguageCode } from '../lib/translations';
 
 export default function Sidebar() {
-  const { currentView, navigate, user, logout, reports } = useSEO();
+  const { currentView, navigate, user, logout, reports, currentLanguage, setLanguage, t } = useSEO();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const menuItems = [
-    { id: 'dashboard' as AppView, label: 'SEO Dashboard', icon: LayoutDashboard, count: reports.length },
-    { id: 'new-audit' as AppView, label: 'Run New Audit', icon: PlusCircle },
-    { id: 'history' as AppView, label: 'Audit History', icon: History },
-    { id: 'reports' as AppView, label: 'Analysis Reports', icon: FileText },
-    { id: 'settings' as AppView, label: 'Engine Settings', icon: Settings },
-    { id: 'profile' as AppView, label: 'My Profile', icon: User },
+    { id: 'dashboard' as AppView, label: t('dashboard'), icon: LayoutDashboard, count: reports.length },
+    { id: 'new-audit' as AppView, label: t('runNewAudit'), icon: PlusCircle },
+    { id: 'keyword-generator' as AppView, label: t('keywordGenerator'), icon: Key },
+    { id: 'youtube-seo' as AppView, label: t('youtubeSEO'), icon: Youtube },
+    { id: 'history' as AppView, label: t('auditHistory'), icon: History },
+    { id: 'reports' as AppView, label: t('analysisReports'), icon: FileText },
+    { id: 'plans' as AppView, label: t('pricingPlans'), icon: Sparkles },
+    { id: 'settings' as AppView, label: t('engineSettings'), icon: Settings },
+    { id: 'profile' as AppView, label: t('myProfile'), icon: User },
   ];
+
+  if (user?.isAdmin) {
+    // Insert admin control link
+    menuItems.push({ id: 'admin' as AppView, label: t('adminConsole'), icon: ShieldAlert });
+  }
 
   const handleNav = (id: AppView) => {
     navigate(id);
@@ -106,6 +118,24 @@ export default function Sidebar() {
               );
             })}
           </nav>
+        </div>
+
+        {/* Language Selector Mobile */}
+        <div className="border-t border-gray-900 pt-3 px-1 mb-4">
+          <label className="text-[9px] font-mono text-gray-500 uppercase tracking-widest block mb-1">
+            Language / ভাষা
+          </label>
+          <select
+            value={currentLanguage}
+            onChange={(e) => setLanguage(e.target.value as LanguageCode)}
+            className="w-full bg-gray-900/60 border border-gray-800 text-gray-300 rounded-xl py-2 px-2.5 text-xs outline-none cursor-pointer"
+          >
+            {SUPPORTED_LANGUAGES.map((lang) => (
+              <option key={lang.code} value={lang.code} className="bg-gray-950 text-gray-300">
+                {lang.flag} {lang.nativeName} ({lang.name})
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* User Footer Profile mobile */}
@@ -198,6 +228,46 @@ export default function Sidebar() {
             >
               <span>{collapsed ? '▶ Expand' : '◀ Collapse Sidebar'}</span>
             </button>
+
+            {/* Desktop Language Selector */}
+            <div className="border-t border-gray-900 pt-3">
+              {!collapsed ? (
+                <div className="space-y-1">
+                  <span className="text-[9px] font-mono text-gray-500 uppercase tracking-widest block px-1">
+                    Select Language / ভাষা
+                  </span>
+                  <select
+                    value={currentLanguage}
+                    onChange={(e) => setLanguage(e.target.value as LanguageCode)}
+                    className="w-full bg-gray-900/60 border border-gray-800 text-gray-300 hover:text-white rounded-xl py-2 px-2 text-xs outline-none cursor-pointer transition-all font-sans"
+                  >
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <option key={lang.code} value={lang.code} className="bg-gray-950 text-gray-300">
+                        {lang.flag} {lang.nativeName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="text-center group relative">
+                  <span className="text-lg cursor-pointer p-2 rounded-xl bg-gray-900 hover:bg-gray-800 block">
+                    {SUPPORTED_LANGUAGES.find(l => l.code === currentLanguage)?.flag || '🇺🇸'}
+                  </span>
+                  <div className="absolute left-full bottom-0 ml-2 hidden group-hover:block bg-gray-950 border border-gray-900 p-2 rounded-xl shadow-2xl z-50 w-40 text-left space-y-1 font-sans">
+                    <p className="text-[9px] font-mono text-gray-500 uppercase tracking-wider border-b border-gray-900 pb-1 mb-1">Languages</p>
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => setLanguage(lang.code)}
+                        className={`w-full text-left text-[11px] px-1.5 py-1 rounded transition-colors block ${currentLanguage === lang.code ? 'text-emerald-400 bg-emerald-500/10 font-bold' : 'text-gray-400 hover:text-white hover:bg-gray-900'}`}
+                      >
+                        {lang.flag} {lang.nativeName}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Profile badge details */}
             {user && (
