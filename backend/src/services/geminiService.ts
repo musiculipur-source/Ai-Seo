@@ -21,6 +21,59 @@ function getAIClient(): GoogleGenAI {
   return aiInstance;
 }
 
+async function generateContentWithRetry(ai: any, params: any, retries = 2, delay = 1000): Promise<any> {
+  const originalModel = params.model || 'gemini-2.5-flash';
+  const modelsToTry = [
+    originalModel,
+    'gemini-2.5-flash',
+    'gemini-1.5-flash',
+    'gemini-2.5-pro'
+  ];
+
+  // Keep unique model names in order
+  const uniqueModels = [...new Set(modelsToTry.filter(Boolean))];
+
+  for (let mIdx = 0; mIdx < uniqueModels.length; mIdx++) {
+    const currentModel = uniqueModels[mIdx];
+    const currentParams = { ...params, model: currentModel };
+    let currentDelay = delay;
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        console.log(`[Gemini Request] Trying model ${currentModel} (attempt ${attempt + 1}/${retries + 1})...`);
+        return await ai.models.generateContent(currentParams);
+      } catch (err: any) {
+        const isTransient = err?.status === 503 || err?.code === 503 || 
+                            err?.message?.includes('503') || 
+                            err?.message?.includes('high demand') ||
+                            err?.message?.includes('UNAVAILABLE') ||
+                            err?.message?.includes('Resource exhausted') ||
+                            err?.status === 429;
+        
+        if (isTransient) {
+          if (attempt < retries) {
+            console.warn(`[Gemini Retry] Transient error on ${currentModel} (attempt ${attempt + 1}): ${err.message || err}. Retrying in ${currentDelay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, currentDelay));
+            currentDelay *= 2;
+            continue;
+          } else {
+            console.warn(`[Gemini Fallback] All ${retries + 1} attempts failed for model ${currentModel} with transient error.`);
+            if (mIdx < uniqueModels.length - 1) {
+              console.log(`[Gemini Fallback] Falling back to next model: ${uniqueModels[mIdx + 1]}`);
+              break; // Break the attempt loop to move to the next model
+            } else {
+              throw err; // Last model failed, propagate error
+            }
+          }
+        } else {
+          // If it's a structural error (like schema or bad arguments), throw immediately
+          throw err;
+        }
+      }
+    }
+  }
+}
+
 export async function generateAIRecommendations(report: SEOAuditReport): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -61,8 +114,8 @@ Produce a professional, detailed, and visually elegant Markdown report. Do NOT u
 Make the tone authoritative, actionable, and encouraging.
 `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
+    const response = await generateContentWithRetry(ai, {
+      model: 'gemini-2.5-flash',
       contents: prompt,
     });
 

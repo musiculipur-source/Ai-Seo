@@ -382,20 +382,37 @@ export function SEOProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const upgradeUserPlan = async (plan: 'basic' | 'standard' | 'premium', details: { txid?: string, method?: string, cardholderName?: string, cardNumber?: string, paypalEmail?: string }) => {
+  const upgradeUserPlan = async (plan: 'basic' | 'standard' | 'premium', details?: any, thirdArg?: any) => {
     if (!user) return;
     try {
+      let txid = '';
+      let paymentMethod = '';
+      let cardholderName = '';
+      let cardNumber = '';
+      let paypalEmail = '';
+
+      if (typeof details === 'string') {
+        txid = details;
+        paymentMethod = typeof thirdArg === 'string' ? thirdArg : '';
+      } else if (details && typeof details === 'object') {
+        txid = details.txid || '';
+        paymentMethod = details.method || details.paymentMethod || '';
+        cardholderName = details.cardholderName || '';
+        cardNumber = details.cardNumber || '';
+        paypalEmail = details.paypalEmail || '';
+      }
+
       const response = await fetch('/api/users/request-upgrade', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           email: user.email, 
           plan, 
-          txid: details.txid, 
-          paymentMethod: details.method,
-          cardholderName: details.cardholderName,
-          cardNumber: details.cardNumber,
-          paypalEmail: details.paypalEmail
+          txid, 
+          paymentMethod,
+          cardholderName,
+          cardNumber,
+          paypalEmail
         }),
       });
       if (response.ok) {
@@ -733,6 +750,7 @@ export function SEOProvider({ children }: { children: ReactNode }) {
       adminLogin,
       syncUserSession,
       upgradeUserPlan,
+      claimFreePlan,
       currentLanguage,
       setLanguage,
       t

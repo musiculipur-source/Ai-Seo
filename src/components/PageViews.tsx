@@ -642,7 +642,7 @@ export function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !name || !phone || !password) {
-      addToast('Please fill out all required fields.', 'error');
+      addToast('সবগুলো প্রয়োজনীয় ঘর পূরণ করুন! / Please fill out all required fields.', 'error');
       return;
     }
     setIsSubmitting(true);
@@ -654,49 +654,53 @@ export function RegisterPage() {
     <div className="max-w-md mx-auto py-12 animate-fade-in">
       <div className="bg-gray-950 border border-gray-900 rounded-2xl p-6 lg:p-8 space-y-6 shadow-2xl">
         <div className="text-center space-y-1.5">
-          <h2 className="text-xl font-display font-black text-white uppercase tracking-tight">Create Workspace</h2>
-          <p className="text-xs text-gray-500">Establish a team workspace to monitor multiple customer domains.</p>
+          <h2 className="text-xl font-display font-black text-white uppercase tracking-tight">
+            Create Workspace / নিবন্ধন করুন
+          </h2>
+          <p className="text-xs text-gray-500">
+            Establish a team workspace to monitor multiple customer domains. / আপনার এসইও অডিট ওয়ার্কস্পেস তৈরি করুন।
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs font-sans">
           <div className="space-y-1.5">
-            <label className="font-mono font-bold text-gray-500 uppercase">Your Name *</label>
+            <label className="font-mono font-bold text-gray-400 uppercase">আপনার নাম / Your Name *</label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Sandra Bullock"
+              placeholder="যেমনঃ Sandra Bullock"
               className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white placeholder-gray-600 outline-none"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="font-mono font-bold text-gray-500 uppercase">Email Address *</label>
+            <label className="font-mono font-bold text-gray-400 uppercase">ইমেইল এড্রেস / Email Address *</label>
             <input
-              type="email"
+              type="text"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. sandra@brand.com"
+              placeholder="যেমনঃ sandra@brand.com"
               className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white placeholder-gray-600 outline-none font-mono"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="font-mono font-bold text-gray-500 uppercase">Phone Number *</label>
+            <label className="font-mono font-bold text-gray-400 uppercase">মোবাইল নাম্বার / Phone Number *</label>
             <input
               type="text"
               required
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="e.g. 017XXXXXXXX"
+              placeholder="যেমনঃ 017XXXXXXXX"
               className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white placeholder-gray-600 outline-none font-mono"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="font-mono font-bold text-gray-500 uppercase">Password *</label>
+            <label className="font-mono font-bold text-gray-400 uppercase">পাসওয়ার্ড / Password *</label>
             <input
               type="password"
               required
@@ -708,12 +712,12 @@ export function RegisterPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="font-mono font-bold text-gray-500 uppercase">Company / Agency Name</label>
+            <label className="font-mono font-bold text-gray-400 uppercase">কোম্পানির নাম / Company / Agency Name</label>
             <input
               type="text"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
-              placeholder="e.g. Gravity Analytics"
+              placeholder="যেমনঃ Gravity Analytics"
               className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white placeholder-gray-600 outline-none"
             />
           </div>
@@ -723,7 +727,7 @@ export function RegisterPage() {
             disabled={isSubmitting}
             className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-bold rounded-xl text-xs uppercase tracking-wider font-mono cursor-pointer transition-colors"
           >
-            {isSubmitting ? 'প্রসেস করা হচ্ছে...' : 'Create Agency Console'}
+            {isSubmitting ? 'প্রসেস করা হচ্ছে...' : 'Create Agency Console / অ্যাকাউন্ট তৈরি করুন'}
           </button>
         </form>
 

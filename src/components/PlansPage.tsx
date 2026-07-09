@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 export default function PlansPage() {
-  const { user, upgradeUserPlan, navigate, adminSettings, addToast } = useSEO();
+  const { user, upgradeUserPlan, claimFreePlan, navigate, adminSettings, addToast } = useSEO();
   const [selectedPlan, setSelectedPlan] = useState<'standard' | 'premium' | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'binance' | 'card' | 'paypal'>('binance');
   const [txid, setTxid] = useState('');
@@ -38,10 +38,11 @@ export default function PlansPage() {
   const handleSelectFree = async () => {
     setIsSubmitting(true);
     try {
-      // Free plan gets upgraded to 'basic'
-      await upgradeUserPlan('basic');
-      addToast('Activated Basic Free Plan (1 audit per 24h).', 'success');
-      navigate('dashboard');
+      // Use claimFreePlan to activate the free basic tier instantly
+      const success = await claimFreePlan();
+      if (success) {
+        navigate('dashboard');
+      }
     } catch {
       addToast('Error setting basic plan.', 'error');
     } finally {

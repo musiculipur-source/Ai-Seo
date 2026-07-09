@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSEO, VisualTheme, AppView } from '../context/SEOContext';
+import { jsPDF } from 'jspdf';
 import { SEOAuditReport } from '../../shared/types';
 import { 
   Sun, 
@@ -67,37 +68,85 @@ export function ExportButtons({ report }: { report: SEOAuditReport }) {
     addToast('Parsing meta tags & structural layout into spreadsheet metrics...', 'info');
 
     setTimeout(() => {
-      // Create CSV mock string
-      const dataRows = [
-        ['SEO AUDIT REPORT', report.url],
-        ['CRAWL TIMESTAMP', report.timestamp],
-        ['OVERALL COMPLIANCE', `${report.overallScore}/100`],
-        [],
-        ['METRIC', 'SCORE/VALUE', 'DIAGNOSTIC MESSAGE'],
-        ['On-page SEO', `${report.scores.onPage}/100`, report.metrics.title.message],
-        ['Technical SEO', `${report.scores.technical}/100`, report.metrics.technical.message],
-        ['Performance SEO', `${report.scores.performance}/100`, report.metrics.performance.message],
-        ['Title Tag', report.metrics.title.value, report.metrics.title.message],
-        ['Description Tag', report.metrics.description.value, report.metrics.description.message],
-        ['H1 Header Count', report.metrics.headings.h1Count, report.metrics.headings.message],
-        ['Image Alt Tag Status', report.metrics.images.value, report.metrics.images.message],
-        ['Crawl Load Time', report.metrics.performance.value, report.metrics.performance.message]
-      ];
+      try {
+        // Create CSV lines
+        const dataRows = [
+          ['SEO AI PRO CONSOLE - WEBCRAWL AUDIT REPORT'],
+          ['Target Domain/URL', report.url],
+          ['Crawl Timestamp', new Date(report.timestamp).toISOString()],
+          ['Report Generated At', new Date().toISOString()],
+          [],
+          ['OVERALL SEO METRICS SUMMARY'],
+          ['Performance Area', 'Score', 'Evaluation Status'],
+          ['Overall Score', report.overallScore, report.overallScore >= 80 ? 'Good' : report.overallScore >= 50 ? 'Warning' : 'Critical'],
+          ['On-Page Content Score', report.scores.onPage, report.scores.onPage >= 80 ? 'Good' : report.scores.onPage >= 50 ? 'Warning' : 'Critical'],
+          ['Technical Compliance Score', report.scores.technical, report.scores.technical >= 80 ? 'Good' : report.scores.technical >= 50 ? 'Warning' : 'Critical'],
+          ['Page Performance/Latency Score', report.scores.performance, report.scores.performance >= 80 ? 'Good' : report.scores.performance >= 50 ? 'Warning' : 'Critical'],
+          [],
+          ['DETAILED FACTOR CHECKLIST INDEX'],
+          ['Audit Element', 'Category', 'Compliance Status', 'Scored Value / Count', 'Diagnostic Warning Message', 'Actionable Recommendation'],
+          
+          ['Meta Title Tag', 'On-Page', report.metrics.title.status, report.metrics.title.value || '(Missing)', report.metrics.title.message, report.metrics.title.recommendation || 'Keep titles between 50-60 characters.'],
+          ['Meta Description Tag', 'On-Page', report.metrics.description.status, report.metrics.description.value || '(Missing)', report.metrics.description.message, report.metrics.description.recommendation || 'Keep descriptions between 120-160 characters.'],
+          ['H1 Header Structure', 'On-Page', report.metrics.headings.status, `${report.metrics.headings.h1Count} H1 found`, report.metrics.headings.message, report.metrics.headings.recommendation || 'Ensure exactly one H1 exists per crawled page.'],
+          ['Image Alt Tags Attribute', 'On-Page', report.metrics.images.status, `${report.metrics.images.missingAlt} of ${report.metrics.images.total} missing`, report.metrics.images.message, report.metrics.images.recommendation || 'Add descriptional alt text tags to all active images.'],
+          ['Outbound Links Status', 'On-Page', report.metrics.links.status, `${report.metrics.links.internal} internal / ${report.metrics.links.external} external`, report.metrics.links.message, report.metrics.links.recommendation || 'Audit links periodically to find dead routes.'],
+          ['HTTPS SSL Certificate Secure', 'Technical', report.metrics.technical.status, report.metrics.technical.isHttps ? 'HTTPS Secure active' : 'HTTP unsecure', report.metrics.technical.message, report.metrics.technical.recommendation || 'Redirect all traffic to secure port 443 HTTPS.'],
+          ['Sitemap XML Discoverability', 'Technical', report.metrics.technical.status, report.metrics.technical.hasSitemap ? 'Sitemap present' : 'Sitemap absent', report.metrics.technical.message, report.metrics.technical.recommendation || 'Generate and publish a standard sitemap.xml file.'],
+          ['Robots Indexing Directive', 'Technical', report.metrics.technical.status, report.metrics.technical.hasRobots ? 'Robots.txt present' : 'Robots.txt absent', report.metrics.technical.message, report.metrics.technical.recommendation || 'Publish a robots.txt containing crawl pathways.'],
+          ['Server Page Load Latency', 'Performance', report.metrics.performance.status, `${report.metrics.performance.loadTimeMs} ms`, report.metrics.performance.message, report.metrics.performance.recommendation || 'Optimize static assets, implement CDN caches.'],
+          ['Crawl Transfer Bundle Size', 'Performance', report.metrics.performance.status, `${report.metrics.performance.pageSizeKb} KB`, report.metrics.performance.message, report.metrics.performance.recommendation || 'Compress styles, scripts, and high resolution images.']
+        ];
 
-      const csvContent = "data:text/csv;charset=utf-8," 
-        + dataRows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(",")).join("\n");
-      
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `seo_audit_${report.url.replace(/^https?:\/\//, '').replace(/\//g, '_')}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+        // Append crawled headings
+        if (report.metrics.headings.list && report.metrics.headings.list.length > 0) {
+          dataRows.push([]);
+          dataRows.push(['CRAWLED SITE HEADING TAGS TREE']);
+          dataRows.push(['Heading Type', 'Heading Content Text']);
+          report.metrics.headings.list.forEach(h => {
+            dataRows.push([h.type.toUpperCase(), h.text]);
+          });
+        }
 
-      setDownloading(null);
-      addToast('SEO audit spreadsheet downloaded successfully!', 'success');
-    }, 1500);
+        // Append AI suggestions
+        if (report.aiRecommendations) {
+          dataRows.push([]);
+          dataRows.push(['GEMINI AI STRATEGIC RECOMMENDATIONS']);
+          const recLines = report.aiRecommendations.split('\n');
+          recLines.forEach(line => {
+            if (line.trim()) {
+              dataRows.push([line.replace(/\*/g, '').trim()]);
+            }
+          });
+        }
+
+        // Generate CSV file content
+        const csvContent = "\uFEFF" + dataRows.map(row => 
+          row.map(val => {
+            const strVal = String(val === null || val === undefined ? '' : val);
+            return `"${strVal.replace(/"/g, '""')}"`;
+          }).join(",")
+        ).join("\n");
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const cleanUrl = report.url.replace(/^https?:\/\//, '').replace(/[^a-zA-Z0-9]/g, '_');
+        link.setAttribute("href", url);
+        link.setAttribute("download", `SEO_Audit_Report_${cleanUrl}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        setDownloading(null);
+        addToast('SEO audit spreadsheet downloaded successfully!', 'success');
+      } catch (err: any) {
+        console.error('CSV Export Failed', err);
+        setDownloading(null);
+        addToast(`CSV compilation failed: ${err.message || err}`, 'error');
+      }
+    }, 1000);
   };
 
   const exportPDF = () => {
@@ -105,11 +154,334 @@ export function ExportButtons({ report }: { report: SEOAuditReport }) {
     addToast('Composing printable optimization blueprint details...', 'info');
 
     setTimeout(() => {
-      // Simulate client-side print layout trigger
-      window.print();
-      setDownloading(null);
-      addToast('Print layout formatted. Download complete.', 'success');
-    }, 1500);
+      try {
+        const doc = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+
+        const margin = 15;
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const contentWidth = pageWidth - (margin * 2); // 180mm
+        let currentY = 15;
+
+        // Colors
+        const primaryColor = [15, 23, 42]; // deep slate (#0f172a)
+        const accentColor = [16, 185, 129]; // emerald (#10b981)
+        const textColorDark = [33, 37, 41];
+        const textColorLight = [100, 116, 139];
+        const bgGrayLight = [248, 250, 252];
+        const borderGray = [226, 232, 240];
+
+        // Header Helper
+        const drawHeader = (pageNum: number) => {
+          doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+          doc.rect(margin, 15, contentWidth, 30, 'F');
+
+          // White Text
+          doc.setTextColor(255, 255, 255);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(14);
+          doc.text('SEO AUDIT & PERFORMANCE REPORT', margin + 8, 26);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8.5);
+          doc.setTextColor(165, 180, 252);
+          doc.text('AUTOMATED WEBCRAWL INDEX & AI OPTIMIZATION BLUEPRINT', margin + 8, 33);
+
+          // Right aligned logo/credit
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10);
+          doc.setTextColor(16, 185, 129);
+          doc.text('SEO AI PRO', pageWidth - margin - 8, 26, { align: 'right' });
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+          doc.setTextColor(200, 200, 200);
+          doc.text(`Page ${pageNum}`, pageWidth - margin - 8, 33, { align: 'right' });
+
+          currentY = 52;
+        };
+
+        const drawFooter = (pNum: number) => {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+          doc.setTextColor(148, 163, 184);
+          doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+          doc.setLineWidth(0.3);
+          doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+          doc.text(`Confidential Client Presentation | Generated by SEO AI Pro Console`, margin, pageHeight - 10);
+          doc.text(`Page ${pNum}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+        };
+
+        // Helper to handle auto page break
+        let pageNum = 1;
+        const ensureSpace = (neededHeight: number) => {
+          if (currentY + neededHeight > pageHeight - 20) {
+            drawFooter(pageNum);
+            doc.addPage();
+            pageNum++;
+            drawHeader(pageNum);
+          }
+        };
+
+        // Start Page 1
+        drawHeader(pageNum);
+
+        // Target Details Box
+        ensureSpace(25);
+        doc.setFillColor(bgGrayLight[0], bgGrayLight[1], bgGrayLight[2]);
+        doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+        doc.setLineWidth(0.3);
+        doc.rect(margin, currentY, contentWidth, 22, 'FD');
+
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text('AUDIT TARGET PROFILE', margin + 6, currentY + 6);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(textColorLight[0], textColorLight[1], textColorLight[2]);
+        doc.text(`Target URL:`, margin + 6, currentY + 12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text(report.url, margin + 28, currentY + 12);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(textColorLight[0], textColorLight[1], textColorLight[2]);
+        doc.text(`Timestamp:`, margin + 6, currentY + 17);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(textColorDark[0], textColorDark[1], textColorDark[2]);
+        doc.text(new Date(report.timestamp).toLocaleString(), margin + 28, currentY + 17);
+
+        currentY += 28;
+
+        // Scoring Overview Grid
+        ensureSpace(40);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text('EXECUTIVE PERFORMANCE SCORES', margin, currentY);
+        currentY += 5;
+
+        // Draw 4 boxes for Overall, OnPage, Technical, Performance
+        const boxWidth = (contentWidth - 9) / 4; // approx 42mm each
+        const scoreCategories = [
+          { label: 'Overall Score', score: report.overallScore, color: [16, 185, 129] },
+          { label: 'On-Page SEO', score: report.scores.onPage, color: [59, 130, 246] },
+          { label: 'Technical SEO', score: report.scores.technical, color: [99, 102, 241] },
+          { label: 'Performance', score: report.scores.performance, color: [236, 72, 153] }
+        ];
+
+        scoreCategories.forEach((cat, index) => {
+          const x = margin + index * (boxWidth + 3);
+          doc.setFillColor(bgGrayLight[0], bgGrayLight[1], bgGrayLight[2]);
+          doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+          doc.rect(x, currentY, boxWidth, 24, 'FD');
+
+          // Top colored indicator line
+          doc.setFillColor(cat.color[0], cat.color[1], cat.color[2]);
+          doc.rect(x, currentY, boxWidth, 1.5, 'F');
+
+          // Score text
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(20);
+          doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+          doc.text(`${cat.score}`, x + boxWidth / 2, currentY + 11, { align: 'center' });
+
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(7.5);
+          doc.setTextColor(textColorLight[0], textColorLight[1], textColorLight[2]);
+          doc.text(cat.label.toUpperCase(), x + boxWidth / 2, currentY + 16, { align: 'center' });
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7);
+          const scoreStatus = cat.score >= 80 ? 'EXCELLENT' : cat.score >= 50 ? 'WARNING' : 'CRITICAL';
+          doc.setTextColor(cat.color[0], cat.color[1], cat.color[2]);
+          doc.text(scoreStatus, x + boxWidth / 2, currentY + 20, { align: 'center' });
+        });
+
+        currentY += 32;
+
+        // Metric Details Section
+        ensureSpace(80);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text('DETAILED AUDIT MATRIX', margin, currentY);
+        currentY += 5;
+
+        // Table headers
+        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.rect(margin, currentY, contentWidth, 8, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.text('SEO FACTOR / AUDIT ELEMENT', margin + 4, currentY + 5.5);
+        doc.text('STATUS', margin + 75, currentY + 5.5);
+        doc.text('RESULT VALUE / MESSAGE', margin + 98, currentY + 5.5);
+
+        currentY += 8;
+
+        // Prepare table row data
+        const rows = [
+          { name: 'Meta Title Tag', status: report.metrics.title.status, val: report.metrics.title.value || '(Missing)', msg: report.metrics.title.message },
+          { name: 'Meta Description Tag', status: report.metrics.description.status, val: report.metrics.description.value || '(Missing)', msg: report.metrics.description.message },
+          { name: 'H1 Header Structure', status: report.metrics.headings.status, val: `${report.metrics.headings.h1Count} H1 found`, msg: report.metrics.headings.message },
+          { name: 'Image Alt Tags Status', status: report.metrics.images.status, val: `${report.metrics.images.missingAlt} of ${report.metrics.images.total} missing alt`, msg: report.metrics.images.message },
+          { name: 'Outbound Links Health', status: report.metrics.links.status, val: `${report.metrics.links.total} total links scanned`, msg: report.metrics.links.message },
+          { name: 'HTTPS Encryption Secure', status: report.metrics.technical.status, val: report.metrics.technical.isHttps ? 'HTTPS Secure Active' : 'HTTP Non-Secure', msg: report.metrics.technical.message },
+          { name: 'Sitemap XML Map Catalog', status: report.metrics.technical.status, val: report.metrics.technical.hasSitemap ? 'Sitemap Discovered' : 'Sitemap Missing', msg: report.metrics.technical.message },
+          { name: 'Robots Indexing Directive', status: report.metrics.technical.status, val: report.metrics.technical.hasRobots ? 'Robots.txt Discovered' : 'Robots.txt Missing', msg: report.metrics.technical.message },
+          { name: 'Server Page Load Latency', status: report.metrics.performance.status, val: `${report.metrics.performance.loadTimeMs} ms`, msg: report.metrics.performance.message },
+          { name: 'Crawl Transfer Bundle Size', status: report.metrics.performance.status, val: `${report.metrics.performance.pageSizeKb} KB`, msg: report.metrics.performance.message }
+        ];
+
+        rows.forEach((row, rIdx) => {
+          ensureSpace(12);
+          // Alternate row backgrounds
+          if (rIdx % 2 === 1) {
+            doc.setFillColor(bgGrayLight[0], bgGrayLight[1], bgGrayLight[2]);
+            doc.rect(margin, currentY, contentWidth, 10, 'F');
+          }
+          doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+          doc.line(margin, currentY + 10, margin + contentWidth, currentY + 10);
+
+          // Name
+          doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8);
+          doc.text(row.name, margin + 4, currentY + 6.5);
+
+          // Status Badge Background
+          let badgeColor = [16, 185, 129]; // green
+          if (row.status === 'warning') badgeColor = [245, 158, 11]; // amber
+          if (row.status === 'error') badgeColor = [239, 68, 68]; // red
+
+          doc.setFillColor(badgeColor[0], badgeColor[1], badgeColor[2]);
+          doc.rect(margin + 75, currentY + 3.5, 16, 4.5, 'F');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(6.5);
+          doc.setTextColor(255, 255, 255);
+          doc.text(row.status.toUpperCase(), margin + 83, currentY + 6.8, { align: 'center' });
+
+          // Message & Details (Word Wrapped)
+          doc.setTextColor(textColorDark[0], textColorDark[1], textColorDark[2]);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7.5);
+
+          const fullMsgText = `${row.val} - ${row.msg}`;
+          const wrappedMsg = doc.splitTextToSize(fullMsgText, 78);
+          doc.text(wrappedMsg, margin + 98, currentY + 5.5);
+
+          currentY += 10;
+        });
+
+        currentY += 8;
+
+        // Structured Headings Hierarchy List
+        if (report.metrics.headings.list && report.metrics.headings.list.length > 0) {
+          ensureSpace(40);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(11);
+          doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+          doc.text('CRAWLED HEADING STRUCTURE TREE', margin, currentY);
+          currentY += 5;
+
+          const headingsToPrint = report.metrics.headings.list.slice(0, 15);
+          headingsToPrint.forEach((h) => {
+            ensureSpace(7);
+            doc.setFillColor(bgGrayLight[0], bgGrayLight[1], bgGrayLight[2]);
+            doc.rect(margin, currentY, contentWidth, 6, 'F');
+
+            // H1 or H2 tag badge
+            const isH1 = h.type.toLowerCase() === 'h1';
+            doc.setFillColor(isH1 ? 16 : 59, isH1 ? 185 : 130, isH1 ? 129 : 246);
+            doc.rect(margin + 2, currentY + 1.2, 8, 3.6, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(6);
+            doc.text(h.type.toUpperCase(), margin + 6, currentY + 3.8, { align: 'center' });
+
+            // Heading Text
+            doc.setTextColor(textColorDark[0], textColorDark[1], textColorDark[2]);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.5);
+            doc.text(h.text.length > 95 ? h.text.substring(0, 95) + '...' : h.text, margin + 14, currentY + 4.2);
+
+            currentY += 6.5;
+          });
+          currentY += 5;
+        }
+
+        // AI-Powered Recommendations Page / Box
+        if (report.aiRecommendations) {
+          ensureSpace(50);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(11);
+          doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+          doc.text('GEMINI AI OPTIMIZATION RECOMMENDATIONS', margin, currentY);
+          currentY += 5;
+
+          // Background card for AI recs
+          const startYForAiBox = currentY;
+          doc.setFillColor(244, 247, 246); // extremely soft green/slate shade
+          doc.setDrawColor(16, 185, 129); // emerald left accent border
+          doc.rect(margin, currentY, contentWidth, 8, 'F'); // Temp starter box
+
+          doc.setTextColor(16, 185, 129);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8.5);
+          doc.text('ACTIONABLE STEP-BY-STEP OPTIMIZATION PROTOCOL', margin + 5, currentY + 5.5);
+          currentY += 10;
+
+          // Split recommendations into clean lines
+          const cleanRecs = report.aiRecommendations
+            .replace(/##/g, '')
+            .replace(/#/g, '')
+            .replace(/\*\*/g, '')
+            .replace(/\*/g, '•');
+
+          const wrappedRecsLines = doc.splitTextToSize(cleanRecs, contentWidth - 10);
+          
+          wrappedRecsLines.forEach((line: string) => {
+            ensureSpace(6);
+            // Draw background card continuation if needed
+            doc.setFillColor(244, 247, 246);
+            doc.rect(margin, currentY - 1, contentWidth, 6, 'F');
+            
+            doc.setTextColor(textColorDark[0], textColorDark[1], textColorDark[2]);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.text(line, margin + 5, currentY + 3);
+            currentY += 5;
+          });
+
+          // Draw an elegant left-side vertical accent border from start to finish
+          doc.setDrawColor(16, 185, 129);
+          doc.setLineWidth(1.5);
+          doc.line(margin + 0.75, startYForAiBox, margin + 0.75, currentY);
+        }
+
+        // End of Document footer on final page
+        drawFooter(pageNum);
+
+        // Save PDF file
+        const cleanUrl = report.url.replace(/^https?:\/\//, '').replace(/[^a-zA-Z0-9]/g, '_');
+        doc.save(`SEO_Audit_Report_${cleanUrl}.pdf`);
+
+        setDownloading(null);
+        addToast('SEO presentation PDF downloaded successfully!', 'success');
+      } catch (err: any) {
+        console.error('PDF Generation Failed', err);
+        setDownloading(null);
+        addToast(`PDF compilation failed: ${err.message || err}`, 'error');
+      }
+    }, 1200);
   };
 
   return (
