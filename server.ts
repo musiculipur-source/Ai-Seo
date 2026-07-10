@@ -319,7 +319,11 @@ async function startServer() {
         return res.status(404).json({ error: 'User not found!' });
       }
 
-      if (user.password && user.password !== password) {
+      if (!user.password) {
+        return res.status(400).json({ error: 'এই ইমেইলটি নিবন্ধিত নয়! দয়া করে প্রথমে সাইন আপ করে পাসওয়ার্ড সেট করুন।' });
+      }
+
+      if (user.password !== password) {
         return res.status(401).json({ error: 'Incorrect password! Please try again.' });
       }
 
