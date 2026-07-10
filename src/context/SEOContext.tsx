@@ -514,9 +514,18 @@ export function SEOProvider({ children }: { children: ReactNode }) {
     addToast(`Visual palette updated to ${t.toUpperCase()}`, 'info');
   };
 
-  const addToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+  const addToast = (message: any, type: 'success' | 'error' | 'info' = 'success') => {
+    let finalMessage = '';
+    if (typeof message === 'string') {
+      finalMessage = message;
+    } else if (message && typeof message === 'object') {
+      finalMessage = message.message || message.error || JSON.stringify(message);
+    } else {
+      finalMessage = String(message || '');
+    }
+
     const id = Math.random().toString(36).substring(2, 9);
-    setToasts(prev => [...prev, { id, message, type }]);
+    setToasts(prev => [...prev, { id, message: finalMessage, type }]);
     
     // Auto remove
     setTimeout(() => {
@@ -564,7 +573,10 @@ export function SEOProvider({ children }: { children: ReactNode }) {
         return true;
       } else {
         const errData = await response.json();
-        addToast(errData.error || 'ভুল ইমেইল/পাসওয়ার্ড! দয়া করে আবার চেষ্টা করুন।', 'error');
+        const errString = (errData && errData.error && typeof errData.error === 'object')
+          ? (errData.error.message || JSON.stringify(errData.error))
+          : (errData.error || 'ভুল ইমেইল/পাসওয়ার্ড! দয়া করে আবার চেষ্টা করুন।');
+        addToast(errString, 'error');
         return false;
       }
     } catch (err) {
@@ -607,7 +619,15 @@ export function SEOProvider({ children }: { children: ReactNode }) {
         let errorMessage = 'নিবন্ধন ব্যর্থ হয়েছে!';
         try {
           const errData = await response.json();
-          errorMessage = errData.error || errData.message || errorMessage;
+          if (errData && errData.error) {
+            if (typeof errData.error === 'object') {
+              errorMessage = errData.error.message || errorMessage;
+            } else {
+              errorMessage = errData.error;
+            }
+          } else if (errData && errData.message) {
+            errorMessage = errData.message;
+          }
         } catch (jsonErr) {
           // Fallback if response is not JSON
         }
