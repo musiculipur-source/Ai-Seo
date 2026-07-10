@@ -568,31 +568,33 @@ export function LoginPage() {
             <Compass className="h-6 w-6" />
           </div>
           <h2 className="text-xl font-display font-black text-white uppercase tracking-tight">
-            SEO Audit Workspace
+            {currentLanguage === 'bn' ? 'এসইও অডিট ওয়ার্কস্পেস' : 'SEO Audit Workspace'}
           </h2>
-          <p className="text-xs text-gray-500">
-            Provide credentials to initialize your crawling workspace session.
+          <p className="text-xs text-gray-400 max-w-xs mx-auto leading-relaxed">
+            {currentLanguage === 'bn' 
+              ? 'নিবন্ধন করার ঝামেলা ছাড়াই যেকোনো জিমেইল এবং পাসওয়ার্ড দিয়ে সরাসরি লগইন করুন!' 
+              : 'Log in directly with any Gmail and password without the hassle of registration!'}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs font-sans">
           <div className="space-y-1.5">
             <label className="font-mono font-bold text-gray-400 uppercase">
-              Gmail / Email Address
+              {currentLanguage === 'bn' ? 'জিমেইল / ইমেইল ঠিকানা' : 'Gmail / Email Address'}
             </label>
             <input
               type="text"
               required
               value={emailOrPhone}
               onChange={(e) => setEmailOrPhone(e.target.value)}
-              placeholder="e.g. user@gmail.com"
+              placeholder="user@gmail.com"
               className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white outline-none font-mono transition-all"
             />
           </div>
 
           <div className="space-y-1.5">
             <label className="font-mono font-bold text-gray-400 uppercase">
-              Password
+              {currentLanguage === 'bn' ? 'পাসওয়ার্ড' : 'Password'}
             </label>
             <input
               type="password"
@@ -609,18 +611,22 @@ export function LoginPage() {
             disabled={isSubmitting}
             className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-bold rounded-xl text-xs uppercase tracking-wider font-mono cursor-pointer transition-colors"
           >
-            {isSubmitting ? 'Verifying...' : 'Launch Session'}
+            {isSubmitting 
+              ? (currentLanguage === 'bn' ? 'যাচাই করা হচ্ছে...' : 'Verifying...') 
+              : (currentLanguage === 'bn' ? 'ওয়ার্কস্পেস চালু করুন' : 'Launch Session')}
           </button>
         </form>
 
-        <div className="text-center pt-2 border-t border-gray-900/60">
-          <button
-            type="button"
-            onClick={() => navigate('register')}
-            className="text-xs text-emerald-400 hover:underline"
-          >
-            Don't have an account? Sign Up
-          </button>
+        <div className="text-center pt-4 border-t border-gray-900/60 space-y-1 bg-gray-900/10 p-3 rounded-xl border border-gray-900/40">
+          <div className="inline-flex items-center space-x-1.5 text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            <span>{currentLanguage === 'bn' ? 'সরাসরি লগইন সচল' : 'Direct Login Active'}</span>
+          </div>
+          <p className="text-[10px] text-gray-400 leading-relaxed">
+            {currentLanguage === 'bn'
+              ? 'নতুন জিমেইল ও পাসওয়ার্ড দিলে তাৎক্ষণিকভাবে অ্যাকাউন্ট তৈরি হয়ে যাবে এবং আপনি ১০টি ফ্রি অডিট ক্রেডিট পাবেন।'
+              : 'Entering any new Gmail & password instantly registers your account and starts you off with 10 free audit credits.'}
+          </p>
         </div>
       </div>
     </div>

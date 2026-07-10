@@ -313,18 +313,34 @@ async function startServer() {
       // Check normal user
       // Support looking up by email or phone
       const users = await getUsers();
-      const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() || (u.phone && u.phone === email));
+      let user = users.find(u => u.email.toLowerCase() === email.toLowerCase() || (u.phone && u.phone === email));
 
       if (!user) {
-        return res.status(404).json({ error: 'User not found!' });
-      }
+        // Automatically register and create user account!
+        const username = email.split('@')[0] || 'User';
+        const readableName = username.charAt(0).toUpperCase() + username.slice(1);
 
-      if (!user.password) {
-        return res.status(400).json({ error: 'এই ইমেইলটি নিবন্ধিত নয়! দয়া করে প্রথমে সাইন আপ করে পাসওয়ার্ড সেট করুন।' });
-      }
-
-      if (user.password !== password) {
-        return res.status(401).json({ error: 'Incorrect password! Please try again.' });
+        user = {
+          email: email.toLowerCase(),
+          name: readableName,
+          phone: '',
+          password: password,
+          company: 'Personal Console',
+          plan: 'basic' as const,
+          credits: 10, // Give them 10 credits by default so they can immediately audit websites!
+          claimedFreePlan: true, // Mark free plan claimed
+          pendingUpgrade: null,
+          joinedAt: new Date().toISOString()
+        };
+        await saveUser(user);
+      } else {
+        // If user exists but doesn't have a password yet, set it to the provided password
+        if (!user.password) {
+          user.password = password;
+          await saveUser(user);
+        } else if (user.password !== password) {
+          return res.status(401).json({ error: 'পাসওয়ার্ডটি সঠিক নয়! দয়া করে সঠিক পাসওয়ার্ড দিন বা নতুন জিমেইল ব্যবহার করুন।' });
+        }
       }
 
       res.json({ success: true, user });
