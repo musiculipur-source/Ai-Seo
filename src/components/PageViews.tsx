@@ -578,21 +578,21 @@ export function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4 text-xs font-sans">
           <div className="space-y-1.5">
             <label className="font-mono font-bold text-gray-400 uppercase">
-              ইমেইল অথবা মোবাইল নাম্বার / Email or Mobile Phone
+              Gmail / Email Address
             </label>
             <input
               type="text"
               required
               value={emailOrPhone}
               onChange={(e) => setEmailOrPhone(e.target.value)}
-              placeholder="e.g. user@gmail.com / 01923..."
+              placeholder="e.g. user@gmail.com"
               className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white outline-none font-mono transition-all"
             />
           </div>
 
           <div className="space-y-1.5">
             <label className="font-mono font-bold text-gray-400 uppercase">
-              পাসওয়ার্ড / Password
+              Password
             </label>
             <input
               type="password"
@@ -609,7 +609,7 @@ export function LoginPage() {
             disabled={isSubmitting}
             className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-bold rounded-xl text-xs uppercase tracking-wider font-mono cursor-pointer transition-colors"
           >
-            {isSubmitting ? 'যাচাই করা হচ্ছে...' : 'প্রবেশ করুন / Launch Session'}
+            {isSubmitting ? 'Verifying...' : 'Launch Session'}
           </button>
         </form>
 
@@ -619,7 +619,7 @@ export function LoginPage() {
             onClick={() => navigate('register')}
             className="text-xs text-emerald-400 hover:underline"
           >
-            নতুন অ্যাকাউন্ট তৈরি করুন / Don't have an account? Sign Up
+            Don't have an account? Sign Up
           </button>
         </div>
       </div>
@@ -634,19 +634,22 @@ export function RegisterPage() {
   const { registerUser, navigate, addToast } = useSEO();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [company, setCompany] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !name || !phone || !password) {
-      addToast('সবগুলো প্রয়োজনীয় ঘর পূরণ করুন! / Please fill out all required fields.', 'error');
+    const trimmedEmail = email.trim();
+    const trimmedName = name.trim();
+    const trimmedPassword = password;
+
+    if (!trimmedEmail || !trimmedName || !trimmedPassword) {
+      addToast('Please fill out all required fields.', 'error');
       return;
     }
+    
     setIsSubmitting(true);
-    const success = await registerUser(email, name, phone, password, company);
+    const success = await registerUser(trimmedEmail, trimmedName, '', trimmedPassword, '');
     setIsSubmitting(false);
   };
 
@@ -655,52 +658,40 @@ export function RegisterPage() {
       <div className="bg-gray-950 border border-gray-900 rounded-2xl p-6 lg:p-8 space-y-6 shadow-2xl">
         <div className="text-center space-y-1.5">
           <h2 className="text-xl font-display font-black text-white uppercase tracking-tight">
-            Create Workspace / নিবন্ধন করুন
+            Create Account
           </h2>
           <p className="text-xs text-gray-500">
-            Establish a team workspace to monitor multiple customer domains. / আপনার এসইও অডিট ওয়ার্কস্পেস তৈরি করুন।
+            Register your name, Gmail, and password to initialize your SEO Audit Workspace.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs font-sans">
           <div className="space-y-1.5">
-            <label className="font-mono font-bold text-gray-400 uppercase">আপনার নাম / Your Name *</label>
+            <label className="font-mono font-bold text-gray-400 uppercase">Your Name *</label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="যেমনঃ Sandra Bullock"
+              placeholder="e.g. Sandra Bullock"
               className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white placeholder-gray-600 outline-none"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="font-mono font-bold text-gray-400 uppercase">ইমেইল এড্রেস / Email Address *</label>
+            <label className="font-mono font-bold text-gray-400 uppercase">Gmail / Email Address *</label>
             <input
-              type="text"
+              type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="যেমনঃ sandra@brand.com"
+              placeholder="e.g. sandra@gmail.com"
               className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white placeholder-gray-600 outline-none font-mono"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="font-mono font-bold text-gray-400 uppercase">মোবাইল নাম্বার / Phone Number *</label>
-            <input
-              type="text"
-              required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="যেমনঃ 017XXXXXXXX"
-              className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white placeholder-gray-600 outline-none font-mono"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="font-mono font-bold text-gray-400 uppercase">পাসওয়ার্ড / Password *</label>
+            <label className="font-mono font-bold text-gray-400 uppercase">Password *</label>
             <input
               type="password"
               required
@@ -711,23 +702,12 @@ export function RegisterPage() {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="font-mono font-bold text-gray-400 uppercase">কোম্পানির নাম / Company / Agency Name</label>
-            <input
-              type="text"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              placeholder="যেমনঃ Gravity Analytics"
-              className="w-full bg-gray-900/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 px-4 text-white placeholder-gray-600 outline-none"
-            />
-          </div>
-
           <button
             type="submit"
             disabled={isSubmitting}
             className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-bold rounded-xl text-xs uppercase tracking-wider font-mono cursor-pointer transition-colors"
           >
-            {isSubmitting ? 'প্রসেস করা হচ্ছে...' : 'Create Agency Console / অ্যাকাউন্ট তৈরি করুন'}
+            {isSubmitting ? 'Processing...' : 'Register Account'}
           </button>
         </form>
 
@@ -737,7 +717,7 @@ export function RegisterPage() {
             onClick={() => navigate('login')}
             className="text-xs text-emerald-400 hover:underline"
           >
-            ইতিমধ্যে অ্যাকাউন্ট আছে? লগইন করুন / Already have an account? Log In
+            Already have an account? Log In
           </button>
         </div>
       </div>
@@ -1152,276 +1132,251 @@ export function YoutubeSEOPage() {
       </form>
 
       {data && (
-        <div className="space-y-4 animate-fade-in">
-          {/* Tab switches */}
-          <div className="flex flex-wrap border-b border-gray-900 gap-1 text-xs font-mono">
-            <button
-              onClick={() => setActiveTab('score')}
-              className={`px-4 py-2.5 font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'score' ? 'bg-gray-950 border-t border-x border-gray-900 text-emerald-400' : 'text-gray-500 hover:text-gray-300'
-              }`}
-            >
-              <Trophy className="h-3.5 w-3.5 text-amber-400" />
-              এসইও অডিট / SEO Score (100%)
-            </button>
-            <button
-              onClick={() => setActiveTab('title')}
-              className={`px-4 py-2.5 font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'title' ? 'bg-gray-950 border-t border-x border-gray-900 text-emerald-400' : 'text-gray-500 hover:text-gray-300'
-              }`}
-            >
-              <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-              নতুন টাইটেল / Optimized Titles
-            </button>
-            <button
-              onClick={() => setActiveTab('keywords')}
-              className={`px-4 py-2.5 font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'keywords' ? 'bg-gray-950 border-t border-x border-gray-900 text-emerald-400' : 'text-gray-500 hover:text-gray-300'
-              }`}
-            >
-              <Key className="h-3.5 w-3.5 text-indigo-400" />
-              কিওয়ার্ড রিচার্জ / Keywords ({data.keywords?.length || 0})
-            </button>
-            <button
-              onClick={() => setActiveTab('description')}
-              className={`px-4 py-2.5 font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'description' ? 'bg-gray-950 border-t border-x border-gray-900 text-emerald-400' : 'text-gray-500 hover:text-gray-300'
-              }`}
-            >
-              <FileText className="h-3.5 w-3.5 text-blue-400" />
-              ডেসক্রিপশন / Description
-            </button>
-            <button
-              onClick={() => setActiveTab('tags')}
-              className={`px-4 py-2.5 font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'tags' ? 'bg-gray-950 border-t border-x border-gray-900 text-emerald-400' : 'text-gray-500 hover:text-gray-300'
-              }`}
-            >
-              <Youtube className="h-3.5 w-3.5 text-rose-400" />
-              ট্যাগসমূহ / Tags
-            </button>
-          </div>
+        <div className="space-y-8 animate-fade-in">
+          {/* 1. OPTIMIZED TITLES */}
+          <div className="bg-gray-950 border border-gray-900 rounded-2xl p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-900 pb-3">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest block">STEP 01</span>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-emerald-400" />
+                  প্রধান অপ্টিমাইজড টাইটেল / Primary Optimized Title
+                </h3>
+              </div>
+              <button
+                onClick={() => handleCopyText(data.optimizedTitle || `🔥 ${title} - Step-by-Step Guide (2026)`, 'টাইটেল ক্লিপবোর্ডে কপি করা হয়েছে!')}
+                className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-mono text-[10.5px] font-black rounded-lg cursor-pointer transition-colors flex items-center gap-1.5"
+              >
+                <Copy className="h-3.5 w-3.5" />
+                কপি করুন / Copy Title
+              </button>
+            </div>
 
-          <div className="bg-gray-950 border border-gray-900 rounded-2xl p-6">
-            {/* 1. SEO AUDIT SCORE VIEW */}
-            {activeTab === 'score' && (
-              <div className="space-y-6 animate-fade-in text-sans">
-                <div className="flex flex-col md:flex-row items-center gap-6 bg-emerald-950/20 border border-emerald-900/30 p-6 rounded-2xl">
-                  {/* Circular Score Badge */}
-                  <div className="relative flex items-center justify-center h-28 w-28 flex-shrink-0 bg-gray-900 rounded-full border border-gray-800 shadow-xl">
-                    <svg className="absolute w-24 h-24 transform -rotate-90">
-                      <circle
-                        cx="48"
-                        cy="48"
-                        r="40"
-                        className="stroke-gray-800"
-                        strokeWidth="6"
-                        fill="transparent"
-                      />
-                      <circle
-                        cx="48"
-                        cy="48"
-                        r="40"
-                        className="stroke-emerald-500"
-                        strokeWidth="6"
-                        fill="transparent"
-                        strokeDasharray="251.2"
-                        strokeDashoffset="0"
-                      />
-                    </svg>
-                    <div className="z-10 text-center font-mono">
-                      <span className="text-2xl font-black text-white">100</span>
-                      <span className="text-gray-500 text-xs block border-t border-gray-800/80 pt-0.5">/ 100</span>
+            <div className="p-4.5 bg-gray-900/40 border border-gray-850 rounded-xl">
+              <h2 className="text-sm sm:text-base font-bold text-white leading-relaxed">
+                {data.optimizedTitle || `🔥 ${title} - Step-by-Step Guide (2026)`}
+              </h2>
+            </div>
+
+            {data.alternativeTitles && data.alternativeTitles.length > 0 && (
+              <div className="space-y-2.5 pt-2">
+                <span className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-wider block">
+                  বিকল্প আকর্ষনীয় টাইটেলসমূহ / Clickable Alternative Options
+                </span>
+                <div className="grid grid-cols-1 gap-2">
+                  {data.alternativeTitles.map((alt: string, idx: number) => (
+                    <div key={idx} className="p-3.5 bg-gray-900/25 border border-gray-900/60 rounded-xl flex justify-between items-center gap-4 hover:border-gray-850 transition-colors animate-fade-in">
+                      <p className="text-xs text-gray-300 font-sans">{alt}</p>
+                      <button
+                        onClick={() => handleCopyText(alt, `বিকল্প টাইটেল-${idx + 1} কপি করা হয়েছে!`)}
+                        className="p-1.5 text-gray-400 hover:text-emerald-400 bg-gray-900 rounded-lg border border-gray-850 hover:border-emerald-500/20 cursor-pointer transition-colors flex-shrink-0"
+                        title="Copy Option"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
                     </div>
-                  </div>
-
-                  <div className="space-y-1.5 text-center md:text-left">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 uppercase">
-                      Perfect Audit Score Verified
-                    </span>
-                    <h3 className="text-base font-bold text-white">
-                      চমৎকার! আপনার ভিডিওটি ১০০/১০০ এসইও স্কোর অর্জন করেছে।
-                    </h3>
-                    <p className="text-xs text-gray-400 leading-relaxed">
-                      ভিডিওর নতুন অপ্টিমাইজড টাইটেল এবং এআই জেনারেটেড ডেসক্রিপশন অত্যন্ত রিচ। মেটা ট্যাগ এবং হাই-সার্চ ভলিউম কিওয়ার্ড ব্যবহার করায় সার্চ অ্যালগরিদম র‍্যাংকিং অনেক বৃদ্ধি পাবে।
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <h4 className="text-xs font-mono font-bold text-gray-400 uppercase tracking-wider">
-                    এসইও অপ্টিমাইজেশন প্যারামিটার লিস্ট / SEO Factor Checklists
-                  </h4>
-
-                  <div className="divide-y divide-gray-900 border border-gray-900 rounded-xl bg-gray-900/20">
-                    {(data.seoScore?.breakdown || [
-                      { label: 'Title Keyword density (টাইটেলে কিওয়ার্ডের সঠিক ব্যবহার)', score: 100, status: 'pass' },
-                      { label: 'Description Length & Structure (ডেসক্রিপশনের দৈর্ঘ্য ও স্ট্রাকচার)', score: 100, status: 'pass' },
-                      { label: 'High Volume Tag integration (সার্চ মেটা ট্যাগ যুক্তকরণ)', score: 100, status: 'pass' },
-                      { label: 'Click-Through-Rate potential (টাইটেল আকর্ষনীয়তা)', score: 100, status: 'pass' },
-                      { label: 'Audience Retention chapters (চ্যাপ্টার টাইমস্ট্যাম্প বিভাজন)', score: 100, status: 'pass' }
-                    ]).map((factor: any, idx: number) => (
-                      <div key={idx} className="p-3.5 flex items-center justify-between text-xs hover:bg-gray-900/30 transition-colors">
-                        <div className="flex items-center space-x-3">
-                          <CheckCircle2 className="h-4.5 w-4.5 text-emerald-400 flex-shrink-0" />
-                          <span className="text-gray-300 font-sans font-medium">{factor.label}</span>
-                        </div>
-                        <div className="flex items-center space-x-2 font-mono">
-                          <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                            {factor.score || 100}%
-                          </span>
-                          <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider hidden sm:inline">Passed</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  ))}
                 </div>
               </div>
             )}
+          </div>
 
-            {/* 2. OPTIMIZED TITLES VIEW */}
-            {activeTab === 'title' && (
-              <div className="space-y-6 animate-fade-in text-sans text-left">
-                <div className="space-y-2">
-                  <span className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-wider block">
-                    প্রধান অপ্টিমাইজড টাইটেল / Primary Click-Matrix Title
+          {/* 2. OPTIMIZED DESCRIPTION */}
+          <div className="bg-gray-950 border border-gray-900 rounded-2xl p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-900 pb-3">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest block">STEP 02</span>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-emerald-400" />
+                  ভিডিও ডেসক্রিপশন / AI-Optimized Video Description
+                </h3>
+              </div>
+              <button
+                onClick={() => handleCopyText(data.description, 'ডেসক্রিপশন কপি করা হয়েছে!')}
+                className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-mono text-[10.5px] font-black rounded-lg cursor-pointer transition-colors flex items-center gap-1.5"
+              >
+                <Copy className="h-3.5 w-3.5" />
+                ডেসক্রিপশন কপি করুন / Copy Description
+              </button>
+            </div>
+            <pre className="text-xs text-gray-300 bg-gray-900/30 p-4.5 border border-gray-900 rounded-xl overflow-x-auto whitespace-pre-wrap font-sans leading-relaxed text-left max-h-[400px]">
+              {data.description}
+            </pre>
+          </div>
+
+          {/* 3. METADATA TAGS */}
+          <div className="bg-gray-950 border border-gray-900 rounded-2xl p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-900 pb-3">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest block">STEP 03</span>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Youtube className="h-4 w-4 text-emerald-400" />
+                  সার্চ মেটা ট্যাগসমূহ / SEO Meta Tags
+                </h3>
+              </div>
+              <button
+                onClick={handleCopyTags}
+                className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-mono text-[10.5px] font-black rounded-lg cursor-pointer transition-colors flex items-center gap-1.5"
+              >
+                <Copy className="h-3.5 w-3.5" />
+                ট্যাগসমূহ কপি করুন / Copy Tags
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2 pt-1">
+              {Array.isArray(data.tags) ? (
+                data.tags.map((tag: string, idx: number) => (
+                  <span key={idx} className="bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-800 text-xs text-gray-300 font-mono hover:border-emerald-500/20 transition-colors">
+                    #{tag}
                   </span>
-                  <div className="p-5 bg-gray-900/50 border border-gray-850 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <h2 className="text-sm sm:text-base font-bold text-white leading-relaxed">
-                      {data.optimizedTitle || `🔥 ${title} - Step-by-Step Guide (2026)`}
-                    </h2>
-                    <button
-                      onClick={() => handleCopyText(data.optimizedTitle || `🔥 ${title} - Step-by-Step Guide (2026)`, 'টাইটেল ক্লিপবোর্ডে কপি করা হয়েছে!')}
-                      className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-mono text-[11px] font-black rounded-xl cursor-pointer transition-colors flex items-center gap-1.5 flex-shrink-0 self-end sm:self-auto"
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                      কপি করুন / Copy Title
-                    </button>
-                  </div>
-                </div>
+                ))
+              ) : (
+                <p className="text-xs text-gray-400">{data.tags}</p>
+              )}
+            </div>
+          </div>
 
-                {data.alternativeTitles && data.alternativeTitles.length > 0 && (
-                  <div className="space-y-3">
-                    <span className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-wider block">
-                      বিকল্প আকর্ষনীয় টাইটেলসমূহ / Clickable Alternative Options
-                    </span>
-                    <div className="space-y-2.5">
-                      {data.alternativeTitles.map((alt: string, idx: number) => (
-                        <div key={idx} className="p-4 bg-gray-900/30 border border-gray-900/60 rounded-xl flex justify-between items-center gap-4 hover:border-gray-800 transition-colors">
-                          <p className="text-xs text-gray-300 font-sans">{alt}</p>
-                          <button
-                            onClick={() => handleCopyText(alt, `বিকল্প টাইটেল-${idx + 1} কপি করা হয়েছে!`)}
-                            className="p-1.5 text-gray-400 hover:text-emerald-400 bg-gray-900 rounded-lg border border-gray-850 hover:border-emerald-500/20 cursor-pointer transition-colors"
-                            title="Copy Title Option"
-                          >
-                            <Copy className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      ))}
+          {/* 4. SEO AUDIT SCORE */}
+          <div className="bg-gray-950 border border-gray-900 rounded-2xl p-6 space-y-5">
+            <div className="space-y-0.5 border-b border-gray-900 pb-3">
+              <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest block">FINAL REPORT</span>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-emerald-400" />
+                ইউটিউব এসইও স্কোর / YouTube SEO Audit
+              </h3>
+            </div>
+
+            <div className="flex flex-col md:flex-row items-center gap-6 bg-emerald-950/20 border border-emerald-900/30 p-6 rounded-2xl">
+              {/* Circular Score Badge */}
+              <div className="relative flex items-center justify-center h-28 w-28 flex-shrink-0 bg-gray-900 rounded-full border border-gray-800 shadow-xl">
+                <svg className="absolute w-24 h-24 transform -rotate-90">
+                  <circle
+                    cx="48"
+                    cy="48"
+                    r="40"
+                    className="stroke-gray-800"
+                    strokeWidth="6"
+                    fill="transparent"
+                  />
+                  <circle
+                    cx="48"
+                    cy="48"
+                    r="40"
+                    className="stroke-emerald-500"
+                    strokeWidth="6"
+                    fill="transparent"
+                    strokeDasharray="251.2"
+                    strokeDashoffset="0"
+                  />
+                </svg>
+                <div className="z-10 text-center font-mono">
+                  <span className="text-2xl font-black text-white">100</span>
+                  <span className="text-gray-500 text-xs block border-t border-gray-800/80 pt-0.5">/ 100</span>
+                </div>
+              </div>
+
+              <div className="space-y-2.5 text-center md:text-left">
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-mono font-black bg-emerald-500 text-gray-950 uppercase border border-emerald-400">
+                  <Check className="h-4 w-4 stroke-[3]" />
+                  SEO Score: 100/100 Done
+                </div>
+                <h3 className="text-base font-bold text-white">
+                  চমৎকার! আপনার ভিডিওটি ১০০/১০০ এসইও স্কোর অর্জন করেছে।
+                </h3>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  ভিডিওর নতুন অপ্টিমাইজড টাইটেল এবং এআই জেনারেটেড ডেসক্রিপশন অত্যন্ত রিচ। মেটা ট্যাগ এবং হাই-সার্চ ভলিউম কিওয়ার্ড ব্যবহার করায় সার্চ অ্যালগরিদম র‍্যাংকিং অনেক বৃদ্ধি পাবে।
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <span className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-wider block">
+                এসইও অপ্টিমাইজেশন প্যারামিটার লিস্ট / SEO Factor Checklists
+              </span>
+
+              <div className="divide-y divide-gray-900 border border-gray-900 rounded-xl bg-gray-900/10">
+                {(data.seoScore?.breakdown || [
+                  { label: 'Title Keyword density (টাইটেলে কিওয়ার্ডের সঠিক ব্যবহার)', score: 100, status: 'pass' },
+                  { label: 'Description Length & Structure (ডেসক্রিপশনের দৈর্ঘ্য ও স্ট্রাকচার)', score: 100, status: 'pass' },
+                  { label: 'High Volume Tag integration (সার্চ মেটা ট্যাগ যুক্তকরণ)', score: 100, status: 'pass' },
+                  { label: 'Click-Through-Rate potential (টাইটেল আকর্ষনীয়তা)', score: 100, status: 'pass' },
+                  { label: 'Audience Retention chapters (চ্যাপ্টার টাইমস্ট্যাম্প বিভাজন)', score: 100, status: 'pass' }
+                ]).map((factor: any, idx: number) => (
+                  <div key={idx} className="p-3.5 flex items-center justify-between text-xs hover:bg-gray-900/30 transition-colors">
+                    <div className="flex items-center space-x-3">
+                      <CheckCircle2 className="h-4 w-4.5 text-emerald-400 flex-shrink-0" />
+                      <span className="text-gray-300 font-sans font-medium">{factor.label}</span>
+                    </div>
+                    <div className="flex items-center space-x-2 font-mono">
+                      <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        {factor.score || 100}%
+                      </span>
+                      <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider hidden sm:inline">Passed</span>
                     </div>
                   </div>
-                )}
+                ))}
               </div>
-            )}
-
-            {/* 3. KEYWORDS SUGGESTIONS */}
-            {activeTab === 'keywords' && (
-              <div className="space-y-4 animate-fade-in text-left">
-                <div className="flex justify-between items-center border-b border-gray-900/60 pb-3">
-                  <span className="text-[11px] font-mono text-gray-400">উচ্চ ট্রাফিক বিশিষ্ট কিওয়ার্ডসমূহ / Video Search Keywords Suggestions</span>
-                  <button
-                    onClick={() => handleCopyText(data.keywords?.map((k: any) => k.keyword).join(', '), 'সবগুলো কিওয়ার্ড ক্লিপবোর্ডে কপি করা হয়েছে!')}
-                    className="px-3 py-1.5 bg-gray-900 hover:bg-emerald-500/10 border border-gray-800 text-gray-400 hover:text-emerald-400 font-mono text-[10px] font-bold rounded-lg transition-all"
-                  >
-                    কিওয়ার্ডসমূহ কপি করুন / Copy Keywords
-                  </button>
-                </div>
-
-                <div className="overflow-x-auto border border-gray-900 rounded-xl">
-                  <table className="w-full text-left border-collapse text-xs font-sans">
-                    <thead>
-                      <tr className="border-b border-gray-900 bg-gray-900/40 text-gray-400 font-mono">
-                        <th className="p-4 font-bold">YOUTUBE KEYWORD</th>
-                        <th className="p-4 font-bold">EST. SEARCH VOLUME</th>
-                        <th className="p-4 font-bold">DIFFICULTY</th>
-                        <th className="p-4 font-bold">SEARCH INTENT</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-900">
-                      {data.keywords?.map((kw: any, idx: number) => {
-                        let diffColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
-                        if (kw.difficulty > 60) {
-                          diffColor = 'text-rose-400 bg-rose-500/10 border-rose-500/20';
-                        } else if (kw.difficulty > 30) {
-                          diffColor = 'text-amber-400 bg-amber-500/10 border-amber-500/20';
-                        }
-                        return (
-                          <tr key={idx} className="hover:bg-gray-900/30 transition-colors">
-                            <td className="p-4 text-white font-bold">{kw.keyword}</td>
-                            <td className="p-4 font-mono text-gray-300">{kw.searchVolume || '1.5K'}</td>
-                            <td className="p-4">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-mono border ${diffColor}`}>
-                                {kw.difficulty}%
-                              </span>
-                            </td>
-                            <td className="p-4">
-                              <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
-                                {kw.intent || 'Informational'}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* 4. OPTIMIZED DESCRIPTION */}
-            {activeTab === 'description' && (
-              <div className="space-y-4 animate-fade-in text-left">
-                <div className="flex justify-between items-center border-b border-gray-900/60 pb-3">
-                  <span className="text-[11px] font-mono text-gray-400">এআই-অপ্টিমাইজড ইউটিউব ডেসক্রিপশন / AI-Optimized YouTube Description</span>
-                  <button
-                    onClick={() => handleCopyText(data.description, 'ডেসক্রিপশন কপি করা হয়েছে!')}
-                    className="px-3 py-1.5 bg-gray-900 hover:bg-emerald-500/10 border border-gray-800 text-gray-400 hover:text-emerald-400 font-mono text-[10px] font-bold rounded-lg transition-all"
-                  >
-                    ডেসক্রিপশন কপি করুন / Copy Description
-                  </button>
-                </div>
-                <pre className="text-xs text-gray-300 bg-gray-900/40 p-4 border border-gray-900 rounded-xl overflow-x-auto whitespace-pre-wrap font-sans leading-relaxed text-left max-h-[450px]">
-                  {data.description}
-                </pre>
-              </div>
-            )}
-
-            {/* 5. METADATA TAGS */}
-            {activeTab === 'tags' && (
-              <div className="space-y-4 animate-fade-in text-left">
-                <div className="flex justify-between items-center border-b border-gray-900/60 pb-3">
-                  <span className="text-[11px] font-mono text-gray-400">সার্চ মেটা ট্যাগসমূহ / SEO Meta Tags</span>
-                  <button
-                    onClick={handleCopyTags}
-                    className="px-3 py-1.5 bg-gray-900 hover:bg-emerald-500/10 border border-gray-800 text-gray-400 hover:text-emerald-400 font-mono text-[10px] font-bold rounded-lg transition-all"
-                  >
-                    ট্যাগসমূহ কপি করুন / Copy Tags
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {Array.isArray(data.tags) ? (
-                    data.tags.map((tag: string, idx: number) => (
-                      <span key={idx} className="bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-800 text-xs text-gray-300 font-mono hover:border-emerald-500/20 transition-colors">
-                        #{tag}
-                      </span>
-                    ))
-                  ) : (
-                    <p className="text-xs text-gray-400">{data.tags}</p>
-                  )}
-                </div>
-              </div>
-            )}
+            </div>
           </div>
+
+          {/* 5. KEYWORDS SUGGESTIONS */}
+          {data.keywords && data.keywords.length > 0 && (
+            <div className="bg-gray-950 border border-gray-900 rounded-2xl p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-900 pb-3">
+                <div className="space-y-0.5">
+                  <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest block">STEP 05</span>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Key className="h-4 w-4 text-emerald-400" />
+                    উচ্চ ট্রাফিক কিওয়ার্ডসমূহ / Video Search Keywords Suggestions
+                  </h3>
+                </div>
+                <button
+                  onClick={() => handleCopyText(data.keywords?.map((k: any) => k.keyword).join(', '), 'সবগুলো কিওয়ার্ড ক্লিপবোর্ডে কপি করা হয়েছে!')}
+                  className="px-3 py-1.5 bg-gray-900 hover:bg-emerald-500/10 border border-gray-800 text-gray-400 hover:text-emerald-400 font-mono text-[10px] font-bold rounded-lg transition-all"
+                >
+                  কিওয়ার্ডসমূহ কপি করুন / Copy Keywords
+                </button>
+              </div>
+
+              <div className="overflow-x-auto border border-gray-900 rounded-xl">
+                <table className="w-full text-left border-collapse text-xs font-sans">
+                  <thead>
+                    <tr className="border-b border-gray-900 bg-gray-900/40 text-gray-400 font-mono">
+                      <th className="p-4 font-bold">YOUTUBE KEYWORD</th>
+                      <th className="p-4 font-bold">EST. SEARCH VOLUME</th>
+                      <th className="p-4 font-bold">DIFFICULTY</th>
+                      <th className="p-4 font-bold">SEARCH INTENT</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-900">
+                    {data.keywords?.map((kw: any, idx: number) => {
+                      let diffColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+                      if (kw.difficulty > 60) {
+                        diffColor = 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+                      } else if (kw.difficulty > 30) {
+                        diffColor = 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+                      }
+                      return (
+                        <tr key={idx} className="hover:bg-gray-900/30 transition-colors animate-fade-in">
+                          <td className="p-4 text-white font-bold font-sans">{kw.keyword}</td>
+                          <td className="p-4 font-mono text-gray-300">{kw.searchVolume || '1.5K'}</td>
+                          <td className="p-4">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-mono border ${diffColor}`}>
+                              {kw.difficulty}%
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                              {kw.intent || 'Informational'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

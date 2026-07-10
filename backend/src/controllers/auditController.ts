@@ -74,6 +74,9 @@ export async function createAudit(req: Request, res: Response, next: NextFunctio
     }
 
     // 5. Save report to server-side directory for history access
+    if (userEmail) {
+      report.ownerEmail = userEmail;
+    }
     await saveReport(report);
 
     Logger.info(`[AuditController] Dashboard audit completed successfully. ID: ${report.id} | Score: ${report.overallScore}`);
@@ -117,8 +120,9 @@ export async function createPart2Audit(req: Request, res: Response, next: NextFu
 
 export async function getAuditHistory(req: Request, res: Response, next: NextFunction) {
   try {
-    Logger.info('[AuditController] Fetching historical audit list');
-    const history = await getHistory();
+    const userEmail = req.headers['x-user-email'] as string;
+    Logger.info(`[AuditController] Fetching historical audit list for user: ${userEmail || 'all'}`);
+    const history = await getHistory(userEmail);
     res.json(history);
   } catch (error) {
     Logger.error('[AuditController] Error loading history', error);
@@ -133,8 +137,9 @@ export async function getAuditReport(req: Request, res: Response, next: NextFunc
       return res.status(400).json({ error: 'Audit ID parameter is required.' });
     }
 
-    Logger.info(`[AuditController] Retrieving full report details for ID: ${id}`);
-    const report = await getReportById(id);
+    const userEmail = req.headers['x-user-email'] as string;
+    Logger.info(`[AuditController] Retrieving full report details for ID: ${id} and user: ${userEmail || 'all'}`);
+    const report = await getReportById(id, userEmail);
     if (!report) {
       return res.status(404).json({ error: 'SEO Audit Report not found.' });
     }
@@ -153,8 +158,9 @@ export async function deleteAudit(req: Request, res: Response, next: NextFunctio
       return res.status(400).json({ error: 'Audit ID parameter is required.' });
     }
 
-    Logger.info(`[AuditController] Deleting report: ${id}`);
-    await deleteReportFromDb(id);
+    const userEmail = req.headers['x-user-email'] as string;
+    Logger.info(`[AuditController] Deleting report: ${id} for user: ${userEmail || 'all'}`);
+    await deleteReportFromDb(id, userEmail);
     res.json({ message: 'SEO Audit Report deleted successfully.' });
   } catch (error) {
     Logger.error('[AuditController] Error deleting report', error);

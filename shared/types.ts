@@ -12,6 +12,7 @@ export interface SEOAuditReport {
   url: string;
   timestamp: string;
   overallScore: number;
+  ownerEmail?: string;
   scores: {
     onPage: number;
     technical: number;
@@ -34,4 +35,5 @@ export interface AuditHistoryItem {
   url: string;
   timestamp: string;
   overallScore: number;
+  ownerEmail?: string;
 }

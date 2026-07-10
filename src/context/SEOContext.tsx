@@ -454,7 +454,8 @@ export function SEOProvider({ children }: { children: ReactNode }) {
   // Load history from express database container
   const reloadHistory = async () => {
     try {
-      const data = await getHistoryList();
+      const email = user?.email;
+      const data = await getHistoryList(email);
       setHistoryList(data);
       
       // Load all available full reports from the database in the background to join with SAMPLE_REPORTS
@@ -462,7 +463,7 @@ export function SEOProvider({ children }: { children: ReactNode }) {
         const fullReports: SEOAuditReport[] = [];
         for (const item of data.slice(0, 5)) { // Get up to 5 full reports to join
           try {
-            const detail = await getReportDetails(item.id);
+            const detail = await getReportDetails(item.id, email);
             fullReports.push(detail);
           } catch {
             // Ignore single failing fetches
@@ -479,6 +480,9 @@ export function SEOProvider({ children }: { children: ReactNode }) {
           finalReportList.forEach(r => uniqueMap.set(r.id, r));
           return Array.from(uniqueMap.values());
         });
+      } else {
+        // Clear non-sample reports if history is empty
+        setReports(SAMPLE_REPORTS);
       }
     } catch {
       // Quiet fail if server is starting up or disconnected
@@ -487,7 +491,7 @@ export function SEOProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     reloadHistory();
-  }, []);
+  }, [user]);
 
   // Sync theme to document body
   useEffect(() => {
@@ -659,7 +663,7 @@ export function SEOProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       addToast(`Initiating crawl of ${url}...`, 'info');
-      const report = await runSEOAudit(url);
+      const report = await runSEOAudit(url, user?.email);
       
       setReports(prev => [report, ...prev]);
       setSelectedReportId(report.id);
@@ -685,7 +689,7 @@ export function SEOProvider({ children }: { children: ReactNode }) {
   const deleteAuditReport = async (id: string) => {
     try {
       if (!id.startsWith('sample-')) {
-        await deleteReport(id);
+        await deleteReport(id, user?.email);
       }
       setReports(prev => prev.filter(r => r.id !== id));
       if (selectedReportId === id) {

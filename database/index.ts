@@ -28,6 +28,7 @@ export async function saveReport(report: SEOAuditReport): Promise<void> {
     url: report.url,
     timestamp: report.timestamp,
     overallScore: report.overallScore,
+    ownerEmail: report.ownerEmail,
   };
   
   // Prepend to history, filter out duplicates of same URL if we want or just keep chronological
@@ -35,38 +36,54 @@ export async function saveReport(report: SEOAuditReport): Promise<void> {
   await fs.writeFile(HISTORY_FILE, JSON.stringify(updatedHistory, null, 2), 'utf-8');
 }
 
-export async function getReportById(id: string): Promise<SEOAuditReport | null> {
+export async function getReportById(id: string, userEmail?: string): Promise<SEOAuditReport | null> {
   await ensureDir();
   try {
     const reportPath = path.join(REPORTS_DIR, `${id}.json`);
     const content = await fs.readFile(reportPath, 'utf-8');
-    return JSON.parse(content) as SEOAuditReport;
+    const report = JSON.parse(content) as SEOAuditReport;
+    
+    // Ownership validation for isolation
+    if (userEmail && report.ownerEmail && report.ownerEmail.toLowerCase() !== userEmail.toLowerCase()) {
+      return null;
+    }
+    return report;
   } catch {
     return null;
   }
 }
 
-export async function getHistory(): Promise<AuditHistoryItem[]> {
+export async function getHistory(userEmail?: string): Promise<AuditHistoryItem[]> {
   await ensureDir();
   try {
     const content = await fs.readFile(HISTORY_FILE, 'utf-8');
-    return JSON.parse(content) as AuditHistoryItem[];
+    const list = JSON.parse(content) as AuditHistoryItem[];
+    if (userEmail) {
+      return list.filter(item => item.ownerEmail && item.ownerEmail.toLowerCase() === userEmail.toLowerCase());
+    }
+    return list;
   } catch {
     return [];
   }
 }
 
-export async function deleteReportFromDb(id: string): Promise<void> {
+export async function deleteReportFromDb(id: string, userEmail?: string): Promise<void> {
   await ensureDir();
   try {
     const reportPath = path.join(REPORTS_DIR, `${id}.json`);
+    if (userEmail) {
+      const report = await getReportById(id, userEmail);
+      if (!report) {
+        return; // Unauthorized or not found
+      }
+    }
     await fs.unlink(reportPath);
   } catch {
     // Ignore if file doesn't exist
   }
 
   try {
-    const history = await getHistory();
+    const history = await getHistory(); // Get raw complete history
     const updatedHistory = history.filter(item => item.id !== id);
     await fs.writeFile(HISTORY_FILE, JSON.stringify(updatedHistory, null, 2), 'utf-8');
   } catch {

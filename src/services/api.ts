@@ -10,10 +10,15 @@ export async function getAIRecommendations(id: string): Promise<AIRecommendation
   return response.json();
 }
 
-export async function runSEOAudit(url: string): Promise<SEOAuditReport> {
+export async function runSEOAudit(url: string, userEmail?: string): Promise<SEOAuditReport> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (userEmail) {
+    headers['x-user-email'] = userEmail;
+  }
+  
   const response = await fetch('/api/audits', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ url }),
   });
 
@@ -25,25 +30,45 @@ export async function runSEOAudit(url: string): Promise<SEOAuditReport> {
   return response.json();
 }
 
-export async function getHistoryList(): Promise<AuditHistoryItem[]> {
-  const response = await fetch('/api/audits/history');
+export async function getHistoryList(userEmail?: string): Promise<AuditHistoryItem[]> {
+  const headers: Record<string, string> = {};
+  if (userEmail) {
+    headers['x-user-email'] = userEmail;
+  }
+
+  const response = await fetch('/api/audits/history', {
+    headers
+  });
   if (!response.ok) {
     throw new Error('Could not fetch audit history.');
   }
   return response.json();
 }
 
-export async function getReportDetails(id: string): Promise<SEOAuditReport> {
-  const response = await fetch(`/api/audits/${id}`);
+export async function getReportDetails(id: string, userEmail?: string): Promise<SEOAuditReport> {
+  const headers: Record<string, string> = {};
+  if (userEmail) {
+    headers['x-user-email'] = userEmail;
+  }
+
+  const response = await fetch(`/api/audits/${id}`, {
+    headers
+  });
   if (!response.ok) {
     throw new Error('Could not retrieve audit report.');
   }
   return response.json();
 }
 
-export async function deleteReport(id: string): Promise<void> {
+export async function deleteReport(id: string, userEmail?: string): Promise<void> {
+  const headers: Record<string, string> = {};
+  if (userEmail) {
+    headers['x-user-email'] = userEmail;
+  }
+
   const response = await fetch(`/api/audits/${id}`, {
     method: 'DELETE',
+    headers
   });
   if (!response.ok) {
     throw new Error('Could not delete audit report.');

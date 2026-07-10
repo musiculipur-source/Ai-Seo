@@ -32,12 +32,11 @@ function getAIClient(): GoogleGenAI {
 }
 
 async function generateContentWithRetry(ai: any, params: any, retries = 2, delay = 1000): Promise<any> {
-  const originalModel = params.model || 'gemini-2.5-flash';
+  const originalModel = params.model || 'gemini-3.5-flash';
   const modelsToTry = [
     originalModel,
-    'gemini-2.5-flash',
-    'gemini-1.5-flash',
-    'gemini-2.5-pro'
+    'gemini-3.5-flash',
+    'gemini-3.1-flash-lite'
   ];
 
   // Keep unique model names in order
@@ -229,14 +228,33 @@ async function startServer() {
   // Authentication Endpoints
   app.post('/api/auth/register', async (req, res, next) => {
     try {
-      const { email, name, phone, password, company } = req.body;
+      let { email, name, phone, password, company } = req.body;
+      
+      // Sanitization: Trim input fields to avoid whitespace/newline bugs common on mobile devices
+      email = email ? email.trim() : '';
+      name = name ? name.trim() : '';
+      phone = phone ? phone.trim() : '';
+      password = password ? password : '';
+      company = company ? company.trim() : '';
+
       if (!email || !name || !password) {
         return res.status(400).json({ error: 'Email, name, and password are required.' });
       }
 
-      const existing = await getUserByEmail(email);
-      if (existing) {
-        return res.status(400).json({ error: 'এই ইমেইল দিয়ে ইতিমধ্যে অ্যাকাউন্ট তৈরি করা আছে!' });
+      const users = await getUsers();
+
+      // Check if email already registered
+      const emailTaken = users.some(u => u.email.toLowerCase() === email.toLowerCase());
+      if (emailTaken) {
+        return res.status(400).json({ error: 'This email is already registered!' });
+      }
+
+      // Check if phone number is already registered under any email or phone field
+      if (phone) {
+        const phoneTaken = users.some(u => (u.phone && u.phone === phone) || u.email === phone);
+        if (phoneTaken) {
+          return res.status(400).json({ error: 'This phone number is already registered!' });
+        }
       }
 
       const user = {
@@ -261,13 +279,18 @@ async function startServer() {
 
   app.post('/api/auth/login', async (req, res, next) => {
     try {
-      const { email, password } = req.body;
+      let { email, password } = req.body;
+      
+      // Trim login inputs as mobile users often auto-complete with a trailing space
+      email = email ? email.trim() : '';
+      password = password ? password : '';
+
       if (!email || !password) {
         return res.status(400).json({ error: 'Email/Phone and password are required.' });
       }
 
       // Check admin credentials
-      const isAdminMatched = (email.trim().toLowerCase() === 'seoai@gmail.com' && password === 'Rabby12@#@#@%rmkja') || 
+      const isAdminMatched = (email.toLowerCase() === 'seoai@gmail.com' && password === 'Rabby12@#@#@%rmkja') || 
                             (email === '01923776959' && password === 'Rabby102030');
       
       if (isAdminMatched) {
@@ -290,11 +313,11 @@ async function startServer() {
       const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() || (u.phone && u.phone === email));
 
       if (!user) {
-        return res.status(404).json({ error: 'ব্যবহারকারী খুঁজে পাওয়া যায়নি!' });
+        return res.status(404).json({ error: 'User not found!' });
       }
 
       if (user.password && user.password !== password) {
-        return res.status(401).json({ error: 'ভুল পাসওয়ার্ড! আবার চেষ্টা করুন।' });
+        return res.status(401).json({ error: 'Incorrect password! Please try again.' });
       }
 
       res.json({ success: true, user });
@@ -306,7 +329,11 @@ async function startServer() {
   // User Sync & Plan endpoints
   app.post('/api/users/sync', async (req, res, next) => {
     try {
-      const { email, name, company } = req.body;
+      let { email, name, company } = req.body;
+      email = email ? email.trim() : '';
+      name = name ? name.trim() : '';
+      company = company ? company.trim() : '';
+
       if (!email) {
         return res.status(400).json({ error: 'Email is required to sync user console.' });
       }
@@ -498,7 +525,7 @@ For each keyword, you must provide:
 `;
 
       const response = await generateContentWithRetry(ai, {
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.5-flash',
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
@@ -560,6 +587,8 @@ You are an elite, highly professional YouTube Channel Growth Specialist, SEO Str
 Analyze the following YouTube video title: "${title}".
 The title may be written in any language (e.g., Bengali, English, Hindi, Spanish, etc.). You MUST process it in the same language and generate highly optimized, high-impact suggestions in that same language or beautifully bilingual formats.
 
+CRITICAL INSTRUCTION: When generating the titles, descriptions, and tags, you MUST research, crawl, and incorporate the latest trending keywords, search suggestions, and organic tags from Google Search auto-completes, YouTube Search auto-suggest, Facebook viral video trends, and major social media hashtags to ensure 100/100 Done search visibility. Model a comprehensive trend crawl over Google, YouTube, and Facebook for this video topic.
+
 You must generate:
 1. "optimizedTitle": The single absolute best, highly clickable, click-through-rate (CTR) optimized, and keyword-rich main video title (in the input language). It must contain power words and emotional triggers.
 2. "alternativeTitles": A list of exactly 3 different attractive alternative title variations that pique curiosity or state high-value benefits.
@@ -577,7 +606,7 @@ Ensure the response strictly conforms to the JSON schema specified.
 `;
 
       const response = await generateContentWithRetry(ai, {
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.5-flash',
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
