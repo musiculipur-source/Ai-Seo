@@ -243,15 +243,18 @@ async function startServer() {
 
       const users = await getUsers();
 
-      // Check if email already registered
-      const emailTaken = users.some(u => u.email.toLowerCase() === email.toLowerCase());
-      if (emailTaken) {
+      // Check if email already registered with an active password
+      const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (existingUser && existingUser.password) {
         return res.status(400).json({ error: 'This email is already registered!' });
       }
 
       // Check if phone number is already registered under any email or phone field
       if (phone) {
-        const phoneTaken = users.some(u => (u.phone && u.phone === phone) || u.email === phone);
+        const phoneTaken = users.some(u => 
+          ((u.phone && u.phone === phone) || u.email === phone) && 
+          u.email.toLowerCase() !== email.toLowerCase()
+        );
         if (phoneTaken) {
           return res.status(400).json({ error: 'This phone number is already registered!' });
         }
@@ -260,14 +263,14 @@ async function startServer() {
       const user = {
         email,
         name,
-        phone: phone || '',
+        phone: phone || (existingUser?.phone || ''),
         password,
-        company: company || 'Personal Console',
-        plan: 'basic' as const,
-        credits: 0, // Starts at 0, must claim free plan or upgrade
-        claimedFreePlan: false,
-        pendingUpgrade: null,
-        joinedAt: new Date().toISOString()
+        company: company || (existingUser?.company || 'Personal Console'),
+        plan: (existingUser?.plan || 'basic') as 'basic' | 'standard' | 'premium',
+        credits: existingUser ? (existingUser.credits ?? 0) : 0, // Keep existing credits or start at 0
+        claimedFreePlan: existingUser ? (existingUser.claimedFreePlan ?? false) : false,
+        pendingUpgrade: existingUser ? (existingUser.pendingUpgrade ?? null) : null,
+        joinedAt: existingUser?.joinedAt || new Date().toISOString()
       };
 
       await saveUser(user);

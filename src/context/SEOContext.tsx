@@ -604,12 +604,19 @@ export function SEOProvider({ children }: { children: ReactNode }) {
         setView('plans');
         return true;
       } else {
-        const errData = await response.json();
-        addToast(errData.error || 'নিবন্ধন ব্যর্থ হয়েছে!', 'error');
+        let errorMessage = 'নিবন্ধন ব্যর্থ হয়েছে!';
+        try {
+          const errData = await response.json();
+          errorMessage = errData.error || errData.message || errorMessage;
+        } catch (jsonErr) {
+          // Fallback if response is not JSON
+        }
+        addToast(errorMessage, 'error');
         return false;
       }
-    } catch (err) {
-      addToast('Failed to register user console.', 'error');
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      addToast('Failed to register user console: ' + (err?.message || 'Network disconnected'), 'error');
       return false;
     } finally {
       setIsLoading(false);
