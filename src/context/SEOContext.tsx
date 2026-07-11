@@ -295,15 +295,16 @@ export function SEOProvider({ children }: { children: ReactNode }) {
     }
 
     // Default seamless guest session so that ANYONE on ANY phone enters instantly without password!
+    const randId = Math.floor(100000 + Math.random() * 900000);
     const instantUser: UserSession = {
-      email: 'guest_explorer@gmail.com',
-      name: 'Guest Explorer',
+      email: `guest_${randId}@gmail.com`,
+      name: `Guest ${randId}`,
       role: 'Guest Explorer',
-      credits: 10,
+      credits: 500,
       company: 'Personal Console',
-      plan: 'basic',
+      plan: 'premium',
       claimedFreePlan: true,
-      avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=Guest'
+      avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=Guest${randId}`
     };
     localStorage.setItem('seo_user', JSON.stringify(instantUser));
     return instantUser;

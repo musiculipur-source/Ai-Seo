@@ -366,17 +366,32 @@ async function startServer() {
       }
       
       let user = await getUserByEmail(email);
+      const isGuest = email.toLowerCase().startsWith('guest_') || email.toLowerCase() === 'guest_explorer@gmail.com';
       if (!user) {
         user = {
           email,
           name: name || email.split('@')[0],
           company: company || 'Personal Console',
-          plan: 'basic',
-          credits: 0, // Default to 0, let them claim the Free plan or purchase
-          claimedFreePlan: false,
+          plan: isGuest ? 'premium' : 'basic',
+          credits: isGuest ? 500 : 0, // Guest gets 500 credits by default so they can explore perfectly!
+          claimedFreePlan: isGuest ? true : false,
           joinedAt: new Date().toISOString()
         };
         await saveUser(user);
+      } else if (isGuest) {
+        // Automatically make sure guest accounts are premium with plenty of credits
+        let changed = false;
+        if (user.plan !== 'premium') {
+          user.plan = 'premium';
+          changed = true;
+        }
+        if (!user.credits || user.credits < 100) {
+          user.credits = 500;
+          changed = true;
+        }
+        if (changed) {
+          await saveUser(user);
+        }
       }
       res.json(user);
     } catch (err) {
