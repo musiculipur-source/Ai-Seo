@@ -246,7 +246,11 @@ async function startServer() {
       // Check if email already registered with an active password
       const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (existingUser && existingUser.password) {
-        return res.status(400).json({ error: 'This email is already registered!' });
+        if (existingUser.password === password) {
+          // If they entered the correct password, log them in seamlessly!
+          return res.json({ success: true, user: existingUser });
+        }
+        return res.status(400).json({ error: 'এই ইমেইলটি ইতিপূর্বে নিবন্ধিত করা হয়েছে! দয়া করে সঠিক পাসওয়ার্ড দিন অথবা অন্য ইমেইল দিয়ে চেষ্টা করুন।' });
       }
 
       // Check if phone number is already registered under any email or phone field
@@ -256,19 +260,19 @@ async function startServer() {
           u.email.toLowerCase() !== email.toLowerCase()
         );
         if (phoneTaken) {
-          return res.status(400).json({ error: 'This phone number is already registered!' });
+          return res.status(400).json({ error: 'এই ফোন নম্বরটি ইতিমধ্যে নিবন্ধিত হয়েছে!' });
         }
       }
 
       const user = {
-        email,
+        email: email.toLowerCase(),
         name,
         phone: phone || (existingUser?.phone || ''),
         password,
         company: company || (existingUser?.company || 'Personal Console'),
         plan: (existingUser?.plan || 'basic') as 'basic' | 'standard' | 'premium',
-        credits: existingUser ? (existingUser.credits ?? 0) : 0, // Keep existing credits or start at 0
-        claimedFreePlan: existingUser ? (existingUser.claimedFreePlan ?? false) : false,
+        credits: existingUser ? (existingUser.credits ?? 10) : 10, // Give 10 credits by default so they can immediately use it!
+        claimedFreePlan: existingUser ? (existingUser.claimedFreePlan ?? true) : true, // Mark free plan claimed by default so they don't get stuck
         pendingUpgrade: existingUser ? (existingUser.pendingUpgrade ?? null) : null,
         joinedAt: existingUser?.joinedAt || new Date().toISOString()
       };
